@@ -1,0 +1,15 @@
+export { default as WebTVLikesView } from './webtv-likes-view';
+export { default as WebTVVideosView } from './webtv-videos-view';
+export { default as WebTVCommentsView } from './webtv-comments-view';
+export { default as WebTVDashboardView } from './webtv-dashboard-view';
+export { default as WebTVPlaylistsView } from './webtv-playlists-view';
+export { default as WebTVVideoEditView } from './webtv-video-edit-view';
+export { default as WebTVCategoriesView } from './webtv-categories-view';
+export { default as WebTVVideoCreateView } from './webtv-video-create-view';
+export { default as WebTVCategoryEditView } from './webtv-category-edit-view';
+export { default as WebTVVideoDetailsView } from './webtv-video-details-view';
+export { default as WebTVPlaylistEditView } from './webtv-playlist-edit-view';
+export { default as WebTVCategoryCreateView } from './webtv-category-create-view';
+export { default as WebTVPlaylistCreateView } from './webtv-playlist-create-view';
+export { default as WebTVCategoryDetailsView } from './webtv-category-details-view';
+export { default as WebTVPlaylistDetailsView } from './webtv-playlist-details-view';

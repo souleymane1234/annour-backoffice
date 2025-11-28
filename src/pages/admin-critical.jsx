@@ -1,0 +1,18 @@
+import { Helmet } from 'react-helmet-async';
+
+import { AdminCriticalView } from 'src/sections/admin/critical';
+
+// ----------------------------------------------------------------------
+
+export default function AdminCriticalPage() {
+  return (
+    <>
+      <Helmet>
+        <title>Actions Critiques | CarbuGo</title>
+      </Helmet>
+
+      <AdminCriticalView />
+    </>
+  );
+}
+
