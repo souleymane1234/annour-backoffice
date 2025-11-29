@@ -75,7 +75,7 @@ export default function ApplicationDetailsView() {
   return (
     <>
       <Helmet>
-        <title> Détails de la candidature | Allo École</title>
+        <title> Détails de la candidature | CarbuGo</title>
       </Helmet>
 
       <Container>

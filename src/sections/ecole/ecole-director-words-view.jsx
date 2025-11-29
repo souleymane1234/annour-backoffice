@@ -119,7 +119,7 @@ export default function EcoleDirectorWordsView() {
     <>
       {contextHolder}
       <Helmet>
-        <title> Mots du directeur | Allo École </title>
+        <title> Mots du directeur | CarbuGo </title>
       </Helmet>
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>

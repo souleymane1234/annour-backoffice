@@ -1,4 +1,4 @@
-# Rapport des Fonctionnalités - Backoffice Allo École
+# Rapport des Fonctionnalités - Backoffice CarbuGo
 
 ## Vue d'ensemble
 Ce rapport présente toutes les fonctionnalités implémentées dans le backoffice de AlloEcole, organisées par sections Administrateur et École.

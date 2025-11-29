@@ -220,7 +220,7 @@ export default function AdminDashboardMainView() {
     <>
       {contextHolder}
       <Helmet>
-        <title> Tableau de bord | Allo École </title>
+        <title> Tableau de bord | CarbuGo </title>
       </Helmet>
       <Container maxWidth="xl">
         {/* Header avec titre et bouton actualiser */}

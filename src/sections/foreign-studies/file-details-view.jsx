@@ -75,7 +75,7 @@ export default function FileDetailsView() {
   return (
     <>
       <Helmet>
-        <title> Détails du dossier | Allo École</title>
+        <title> Détails du dossier | CarbuGo</title>
       </Helmet>
 
       <Container>

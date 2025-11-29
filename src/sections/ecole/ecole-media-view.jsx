@@ -335,7 +335,7 @@ export default function EcoleMediaView() {
     <>
       {contextHolder}
       <Helmet>
-        <title> Médias | Allo École </title>
+        <title> Médias | CarbuGo </title>
       </Helmet>
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>

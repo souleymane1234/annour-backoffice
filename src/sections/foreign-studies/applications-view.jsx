@@ -229,7 +229,7 @@ export default function ApplicationsView() {
   return (
     <>
       <Helmet>
-        <title> Candidatures Études à l&apos;Étranger | Allo École</title>
+        <title> Candidatures Études à l&apos;Étranger | CarbuGo</title>
       </Helmet>
 
       <Container>

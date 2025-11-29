@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Cette implémentation ajoute un module complet de gestion des bourses et études à l'application Allo École Backoffice. Le module permet aux administrateurs de gérer les bourses, les dossiers étudiants et les candidatures.
+Cette implémentation ajoute un module complet de gestion des bourses et études à l'application CarbuGo Backoffice. Le module permet aux administrateurs de gérer les bourses, les dossiers étudiants et les candidatures.
 
 ## Fonctionnalités implémentées
 

@@ -72,7 +72,7 @@ export default function PartnerStatsView() {
   return (
     <>
       <Helmet>
-        <title> Statistiques des partenaires | Allo École</title>
+        <title> Statistiques des partenaires | CarbuGo</title>
       </Helmet>
 
       <Container>

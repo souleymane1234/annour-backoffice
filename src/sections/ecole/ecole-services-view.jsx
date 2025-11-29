@@ -128,7 +128,7 @@ export default function EcoleServicesView() {
     <>
       {contextHolder}
       <Helmet>
-        <title> Services | Allo École </title>
+        <title> Services | CarbuGo </title>
       </Helmet>
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>

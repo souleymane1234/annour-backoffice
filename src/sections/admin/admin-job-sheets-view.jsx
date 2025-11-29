@@ -953,7 +953,7 @@ export default function AdminJobSheetsView() {
   return (
     <>
       <Helmet>
-        <title> Gestion Fiches Métiers | Allo École </title>
+        <title> Gestion Fiches Métiers | CarbuGo </title>
       </Helmet>
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>

@@ -72,7 +72,7 @@ export default function ApplicationStatsView() {
   return (
     <>
       <Helmet>
-        <title> Statistiques des candidatures | Allo École</title>
+        <title> Statistiques des candidatures | CarbuGo</title>
       </Helmet>
 
       <Container>

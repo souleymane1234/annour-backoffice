@@ -154,7 +154,7 @@ export default function PartnerFormView() {
       {contextHolder}
       <Helmet>
         <title>
-          {isEdit ? 'Modifier le partenaire' : 'Nouveau partenaire'} | Allo École
+          {isEdit ? 'Modifier le partenaire' : 'Nouveau partenaire'} | CarbuGo
         </title>
       </Helmet>
 

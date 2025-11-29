@@ -160,14 +160,30 @@ export default function StationDetailsView() {
       return;
     }
 
-    if (pompisteForm.password.length < 4) {
-      showError('Erreur', 'Le mot de passe doit contenir au moins 4 caractères');
+    // Valider le format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(pompisteForm.email)) {
+      showError('Erreur', 'Veuillez entrer un email valide');
+      return;
+    }
+
+    // Valider que le mot de passe contient exactement 4 chiffres
+    if (!/^\d{4}$/.test(pompisteForm.password)) {
+      showError('Erreur', 'Le mot de passe doit contenir exactement 4 chiffres');
       return;
     }
 
     setCreatePompisteDialog({ open: true, loading: true });
     try {
-      const result = await ConsumApi.createStationPompiste(stationId, pompisteForm);
+      // Répéter le code de 4 chiffres pour créer un mot de passe de 8 caractères (exigé par le backend)
+      const passwordForBackend = pompisteForm.password + pompisteForm.password;
+      
+      const formDataForBackend = {
+        ...pompisteForm,
+        password: passwordForBackend,
+      };
+      
+      const result = await ConsumApi.createStationPompiste(stationId, formDataForBackend);
       const processed = showApiResponse(result, {
         successTitle: 'Pompiste créé',
         errorTitle: 'Erreur de création',
@@ -932,6 +948,8 @@ export default function StationDetailsView() {
               type="email"
               value={pompisteForm.email}
               onChange={(e) => setPompisteForm({ ...pompisteForm, email: e.target.value })}
+              error={pompisteForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pompisteForm.email)}
+              helperText={pompisteForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pompisteForm.email) ? "Format d'email invalide" : ""}
               required
             />
             <TextField
@@ -959,10 +977,20 @@ export default function StationDetailsView() {
               fullWidth
               label="Mot de passe"
               type="password"
+              inputMode="numeric"
               value={pompisteForm.password}
-              onChange={(e) => setPompisteForm({ ...pompisteForm, password: e.target.value })}
-              helperText="Minimum 4 caractères"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ''); // Supprimer tout ce qui n'est pas un chiffre
+                if (value.length <= 4) {
+                  setPompisteForm({ ...pompisteForm, password: value });
+                }
+              }}
+              helperText="4 chiffres uniquement"
               required
+              inputProps={{
+                maxLength: 4,
+                pattern: '[0-9]*',
+              }}
             />
           </Stack>
         </DialogContent>
@@ -991,7 +1019,8 @@ export default function StationDetailsView() {
               !pompisteForm.password ||
               !pompisteForm.firstName ||
               !pompisteForm.lastName ||
-              pompisteForm.password.length < 4
+              !/^\d{4}$/.test(pompisteForm.password) ||
+              !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pompisteForm.email)
             }
           >
             Créer

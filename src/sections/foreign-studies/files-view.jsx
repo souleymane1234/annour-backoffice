@@ -230,7 +230,7 @@ export default function FilesView() {
   return (
     <>
       <Helmet>
-        <title> Dossiers Études à l&apos;Étranger | Allo École</title>
+        <title> Dossiers Études à l&apos;Étranger | CarbuGo</title>
       </Helmet>
 
       <Container>

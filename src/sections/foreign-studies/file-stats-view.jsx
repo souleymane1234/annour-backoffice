@@ -72,7 +72,7 @@ export default function FileStatsView() {
   return (
     <>
       <Helmet>
-        <title> Statistiques des dossiers | Allo École</title>
+        <title> Statistiques des dossiers | CarbuGo</title>
       </Helmet>
 
       <Container>
