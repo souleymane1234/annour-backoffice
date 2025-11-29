@@ -438,6 +438,121 @@ export default class ConsumApi {
   static async deleteStation(stationId) {
     return apiClient.delete(apiUrl.stationById(stationId));
   }
+
+  // ========== USERS MANAGEMENT ==========
+
+  // Obtenir tous les utilisateurs avec filtres
+  static async getUsers({ search, role, isSuspended } = {}) {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (role) params.append('role', role);
+    if (isSuspended !== undefined && isSuspended !== null) params.append('isSuspended', isSuspended);
+    const queryString = params.toString();
+    const url = queryString ? `${apiUrl.users}?${queryString}` : apiUrl.users;
+    return apiClient.get(url);
+  }
+
+  // Obtenir les incidents d'un utilisateur
+  static async getUserIncidents(userId) {
+    return apiClient.get(apiUrl.userIncidents(userId));
+  }
+
+  // Obtenir l'historique des passages d'un utilisateur
+  static async getUserPassages(userId) {
+    return apiClient.get(apiUrl.userPassages(userId));
+  }
+
+  // Obtenir le profil complet d'un utilisateur
+  static async getUserProfile(userId) {
+    return apiClient.get(apiUrl.userProfile(userId));
+  }
+
+  // Obtenir le véhicule d'un utilisateur
+  static async getUserVehicle(userId) {
+    return apiClient.get(apiUrl.userVehicle(userId));
+  }
+
+  // Changer le rôle d'un utilisateur
+  static async updateUserRole(userId, role) {
+    const body = { role };
+    return apiClient.request('PUT', apiUrl.userUpdateRole(userId), body);
+  }
+
+  // Suspendre/réactiver un utilisateur
+  static async updateUserStatus(userId, isSuspended) {
+    const url = `${apiUrl.userUpdateStatus(userId)}?isSuspended=${isSuspended}`;
+    return apiClient.request('PATCH', url, null);
+  }
+
+  // ========== SESSIONS MANAGEMENT ==========
+
+  // Obtenir toutes les sessions
+  static async getSessions() {
+    return apiClient.get(apiUrl.sessions);
+  }
+
+  // Obtenir les sessions actives
+  static async getActiveSessions() {
+    return apiClient.get(apiUrl.sessionsActive);
+  }
+
+  // Obtenir les détails d'une session
+  static async getSessionById(sessionId) {
+    return apiClient.get(apiUrl.sessionById(sessionId));
+  }
+
+  // Créer une nouvelle session
+  static async createSession({ stationId, fuelType, capacityTotal, capacityRemaining, volumePerService, radiusKm, status = 'PENDING' }) {
+    const body = {
+      stationId,
+      fuelType,
+      capacityTotal,
+      capacityRemaining: capacityRemaining || capacityTotal,
+      volumePerService,
+      radiusKm,
+    status,
+    };
+    return apiClient.post(apiUrl.sessions, body);
+  }
+
+  // Fermer une session
+  static async closeSession(sessionId) {
+    return apiClient.post(apiUrl.sessionClose(sessionId), null);
+  }
+
+  // Rafraîchir la file active d'une session
+  static async refreshSessionFile(sessionId) {
+    return apiClient.post(apiUrl.sessionRefreshFile(sessionId), null);
+  }
+
+  // Résoudre une session bloquée
+  static async resolveSession(sessionId) {
+    return apiClient.post(apiUrl.sessionResolve(sessionId), null);
+  }
+
+  // Modifier la capacité d'une session
+  static async updateSessionCapacity(sessionId, { capacityTotal, capacityRemaining, radiusKm }) {
+    const body = { capacityTotal, capacityRemaining, radiusKm };
+    return apiClient.request('PUT', apiUrl.sessionUpdateCapacity(sessionId), body);
+  }
+
+  // Modifier le rayon d'une session
+  static async updateSessionRadius(sessionId, radiusKm) {
+    const body = { radiusKm };
+    return apiClient.request('PATCH', apiUrl.sessionUpdateRadius(sessionId), body);
+  }
+
+  // Modifier le statut d'une session
+  static async updateSessionStatus(sessionId, status) {
+    const body = { status };
+    return apiClient.request('PATCH', apiUrl.sessionUpdateStatus(sessionId), body);
+  }
+
+  // Modifier le volume par service d'une session
+  static async updateSessionVolumePerService(sessionId, volumePerService) {
+    const body = { volumePerService };
+    return apiClient.request('PATCH', apiUrl.sessionUpdateVolumePerService(sessionId), body);
+  }
 }
 
 // Fonction pour normaliser le rôle depuis l'API vers le format interne

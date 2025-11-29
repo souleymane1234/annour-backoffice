@@ -28,4 +28,12 @@ export const routesName = {
   // Stations Management
   adminStations: '/admin/stations',
   adminStationDetails: '/admin/stations/:id',
+  
+  // Users Management
+  adminUsers: '/admin/users',
+  adminUserDetails: '/admin/users/:id',
+  
+  // Sessions Management
+  adminSessions: '/admin/sessions',
+  adminSessionDetails: '/admin/sessions/:id',
 };

@@ -10,6 +10,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
+import { LoadingButton } from '@mui/lab';
 
 import { RouterLink } from 'src/routes/components';
 
@@ -47,6 +48,7 @@ export default function AdminDashboardMainView() {
     litersDistribution: null,
   });
   const [loadingCarbuGo, setLoadingCarbuGo] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Données pour les graphiques
   const [dates, setDates] = useState([]);
@@ -66,7 +68,7 @@ export default function AdminDashboardMainView() {
   const [dataLoaded, setDataLoaded] = useState(false);
 
   // Charger les statistiques CarbuGo
-  const loadCarbuGoStats = useCallback(async () => {
+  const loadCarbuGoStats = useCallback(async (isRefresh = false) => {
     try {
       setLoadingCarbuGo(true);
       const [userGrowthResult, stationsResult, occupationResult, serviceTimeResult] = await Promise.allSettled([
@@ -83,12 +85,20 @@ export default function AdminDashboardMainView() {
         averageServiceTime: serviceTimeResult.status === 'fulfilled' && serviceTimeResult.value.success ? serviceTimeResult.value.data : null,
         litersDistribution: null,
       });
+
+      // Marquer que le premier chargement est terminé
+      if (isInitialLoading) {
+        setIsInitialLoading(false);
+      }
     } catch (error) {
       console.error('Error loading CarbuGo stats:', error);
+      if (isInitialLoading) {
+        setIsInitialLoading(false);
+      }
     } finally {
       setLoadingCarbuGo(false);
     }
-  }, []);
+  }, [isInitialLoading]);
 
   const loadData = useCallback(async () => {
     // Éviter les requêtes répétées
@@ -104,7 +114,7 @@ export default function AdminDashboardMainView() {
       if (carbuGoStats.userGrowth) {
         setTotalUsers(carbuGoStats.userGrowth.totalUsers || 0);
       }
-      
+
       // Générer les données de graphiques temporels
       setDates(
         Array.from({ length: 30 }, (_, i) => {
@@ -122,7 +132,7 @@ export default function AdminDashboardMainView() {
       setDataLoaded(true);
     } catch (error) {
       console.error('Erreur lors du chargement du dashboard admin:', error);
-      showError('Erreur', 'Impossible de charger les statistiques. Veuillez réessayer.');
+        showError('Erreur', 'Impossible de charger les statistiques. Veuillez réessayer.');
       setDataLoaded(true);
     } finally {
       setFetching(false);
@@ -139,7 +149,7 @@ export default function AdminDashboardMainView() {
   useEffect(() => {
     // Charger les données après que les stats CarbuGo soient disponibles
     if (carbuGoStats.userGrowth) {
-      loadData();
+    loadData();
     }
   }, [loadData, carbuGoStats.userGrowth]);
 
@@ -230,41 +240,63 @@ export default function AdminDashboardMainView() {
               Vue d&apos;ensemble de la plateforme
             </Typography>
           </Box>
-          <Button
+          <LoadingButton
             variant="outlined"
             startIcon={<Iconify icon="solar:refresh-bold" />}
-            onClick={() => {
+            onClick={async () => {
               setDataLoaded(false);
-              setLoadingCarbuGo(true);
-              loadCarbuGoStats();
+              await loadCarbuGoStats(true);
               loadData();
             }}
-            disabled={loadingCarbuGo}
+            loading={loadingCarbuGo && !isInitialLoading}
+            disabled={loadingCarbuGo && isInitialLoading}
             sx={{ flexShrink: 0 }}
           >
-            {loadingCarbuGo ? 'Chargement...' : 'Actualiser'}
-          </Button>
+            Actualiser
+          </LoadingButton>
         </Box>
 
-        {/* Indicateur de statut de l'API CarbuGo */}
-        <Box
-          sx={{
-            mb: 4,
-          }}
-        >
-          <Card
-            sx={{
-              p: 2,
-              bgcolor: loadingCarbuGo ? alpha(theme.palette.warning.main, 0.1) : alpha(theme.palette.success.main, 0.1),
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              API CarbuGo: {loadingCarbuGo ? 'Chargement...' : 'Connectée'}
-            </Typography>
-          </Card>
-        </Box>
 
-        {!loadingCarbuGo ? (
+        {isInitialLoading ? (
+          // Skeleton loading - uniquement au premier chargement
+          <Stack spacing={3}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
+              }}
+            >
+              {Array.from(new Array(4)).map((_, index) => (
+                <Box key={`skeleton-${index}`} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+                  <Skeleton variant="rectangular" width="100%" height={120} />
+                </Box>
+              ))}
+            </Box>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
+              }}
+            >
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 12px)' } }}>
+                <Card sx={{ p: 2 }}>
+                  <Skeleton width="40%" variant="text" sx={{ fontSize: '1rem', mb: 2 }} />
+                  <Skeleton width="60%" variant="text" sx={{ fontSize: '0.875rem', mb: 3 }} />
+                  <Skeleton variant="rectangular" width="100%" height={450} />
+                </Card>
+              </Box>
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.33% - 12px)' } }}>
+                <Card sx={{ p: 2, height: 540 }}>
+                  <Skeleton width="50%" variant="text" sx={{ fontSize: '1rem', mb: 2 }} />
+                  <Skeleton variant="circular" width="60%" height={300} sx={{ mx: 'auto', my: 5 }} />
+                </Card>
+              </Box>
+            </Box>
+          </Stack>
+        ) : (
           <Stack spacing={4}>
             {/* Section Statistiques CarbuGo */}
             {carbuGoStats.userGrowth ? (
@@ -276,39 +308,39 @@ export default function AdminDashboardMainView() {
                 </Divider>
 
                 {/* Widgets CarbuGo */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 3,
-                  }}
-                >
-                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-                    <AppWidgetSummary
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
+              }}
+            >
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+                <AppWidgetSummary
                       title="Total Utilisateurs"
                       total={carbuGoStats.userGrowth.totalUsers || 0}
-                      color="primary"
+                  color="primary"
                       icon={<Iconify icon="solar:users-group-rounded-bold" width={32} />}
-                    />
-                  </Box>
-                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-                    <AppWidgetSummary
+                />
+              </Box>
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+                <AppWidgetSummary
                       title="Nouveaux (30j)"
                       total={carbuGoStats.userGrowth.newUsersLast30Days || 0}
-                      color="success"
+                  color="success"
                       icon={<Iconify icon="solar:user-plus-bold" width={32} />}
-                    />
-                  </Box>
-                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+                />
+              </Box>
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
                     <Card
                       component={Stack}
                       spacing={3}
                       direction="row"
-                      sx={{
+                  sx={{
                         px: 3,
                         py: 5,
                         borderRadius: 2,
-                        bgcolor: (theme) => alpha(theme.palette.info.main, 0.08),
+                        bgcolor: (themeParam) => alpha(themeParam.palette.info.main, 0.08),
                       }}
                     >
                       <Box sx={{ width: 64, height: 64 }}>
@@ -323,28 +355,28 @@ export default function AdminDashboardMainView() {
                         </Typography>
                       </Stack>
                     </Card>
-                  </Box>
-                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-                    <AppWidgetSummary
+              </Box>
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+                <AppWidgetSummary
                       title="Sessions Actives"
                       total={carbuGoStats.activeFilesOccupation?.totalActiveSessions || 0}
                       color="warning"
                       icon={<Iconify icon="solar:users-group-rounded-bold" width={32} />}
-                    />
-                  </Box>
-                </Box>
+                />
+              </Box>
+            </Box>
 
                 {/* Graphiques CarbuGo */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 3,
-                  }}
-                >
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
+              }}
+            >
                   {/* Croissance utilisateurs */}
                   {carbuGoStats.userGrowth?.dailyGrowth && carbuGoStats.userGrowth.dailyGrowth.length > 0 && (
-                    <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 12px)' } }}>
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 12px)' } }}>
                       <Card>
                         <Box sx={{ p: 3, pb: 1 }}>
                           <Typography variant="h6">Croissance des Utilisateurs</Typography>
@@ -363,15 +395,15 @@ export default function AdminDashboardMainView() {
                             options={userGrowthChartOptions}
                             width="100%"
                             height={364}
-                          />
-                        </Box>
+                />
+              </Box>
                       </Card>
                     </Box>
                   )}
 
                   {/* Stations les plus actives */}
                   {carbuGoStats.mostActiveStations?.stations && carbuGoStats.mostActiveStations.stations.length > 0 && (
-                    <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.33% - 12px)' } }}>
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.33% - 12px)' } }}>
                       <Card>
                         <Box sx={{ p: 3 }}>
                           <Typography variant="h6">Stations les Plus Actives</Typography>
@@ -390,22 +422,22 @@ export default function AdminDashboardMainView() {
                             options={stationsChartOptions}
                             width="100%"
                             height={364}
-                          />
-                        </Box>
+                />
+              </Box>
                       </Card>
-                    </Box>
+            </Box>
                   )}
-                </Box>
+            </Box>
 
                 {/* Temps moyen de service et Occupation */}
                 {carbuGoStats.averageServiceTime && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 3,
-                    }}
-                  >
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
+              }}
+            >
                     <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' } }}>
                       <Card sx={{ p: 3 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>
@@ -443,7 +475,7 @@ export default function AdminDashboardMainView() {
                     {carbuGoStats.activeFilesOccupation?.activeSessions && carbuGoStats.activeFilesOccupation.activeSessions.length > 0 && (
                       <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' } }}>
                         <Card sx={{ p: 3 }}>
-                          <Typography variant="h6" sx={{ mb: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
                             Occupation des Files Actives
                           </Typography>
                           <Stack spacing={1}>
@@ -478,45 +510,6 @@ export default function AdminDashboardMainView() {
               </Card>
             )}
 
-          </Stack>
-        ) : (
-          // Skeleton loading
-          <Stack spacing={3}>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 3,
-              }}
-            >
-              {Array.from(new Array(4)).map((_, index) => (
-                <Box key={`skeleton-${index}`} sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
-                  <Skeleton variant="rectangular" width="100%" height={120} />
-                </Box>
-              ))}
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 3,
-              }}
-            >
-              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.66% - 12px)' } }}>
-                <Card sx={{ p: 2 }}>
-                  <Skeleton width="40%" variant="text" sx={{ fontSize: '1rem', mb: 2 }} />
-                  <Skeleton width="60%" variant="text" sx={{ fontSize: '0.875rem', mb: 3 }} />
-                  <Skeleton variant="rectangular" width="100%" height={450} />
-                </Card>
-              </Box>
-              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.33% - 12px)' } }}>
-                <Card sx={{ p: 2, height: 540 }}>
-                  <Skeleton width="50%" variant="text" sx={{ fontSize: '1rem', mb: 2 }} />
-                  <Skeleton variant="circular" width="60%" height={300} sx={{ mx: 'auto', my: 5 }} />
-                </Card>
-              </Box>
-            </Box>
           </Stack>
         )}
       </Container>

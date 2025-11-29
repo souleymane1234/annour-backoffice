@@ -24,9 +24,23 @@ const navConfig = [
     protected: [RoleEnum.SUPERADMIN],
   },
   {
+    title: 'Utilisateurs',
+    path: routesName.adminUsers,
+    childrenPath: [routesName.adminUsers, routesName.adminUserDetails],
+    icon: icon('ic_user'),
+    protected: [RoleEnum.SUPERADMIN, RoleEnum.ADMIN],
+  },
+  {
     title: 'Stations',
     path: routesName.adminStations,
     childrenPath: [routesName.adminStations, routesName.adminStationDetails],
+    icon: icon('ic_blog'),
+    protected: [RoleEnum.SUPERADMIN, RoleEnum.ADMIN, RoleEnum.STATION],
+  },
+  {
+    title: 'Sessions',
+    path: routesName.adminSessions,
+    childrenPath: [routesName.adminSessions, routesName.adminSessionDetails],
     icon: icon('ic_blog'),
     protected: [RoleEnum.SUPERADMIN, RoleEnum.ADMIN, RoleEnum.STATION],
   },

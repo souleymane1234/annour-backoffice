@@ -66,6 +66,27 @@ export const apiUrl = {
   stationPompistes: (stationId) => `${base_url}/stations/${stationId}/pompistes`,
   stationReset: (stationId) => `${base_url}/stations/${stationId}/reset`,
   stationStatus: (stationId) => `${base_url}/stations/${stationId}/status`,
+
+  // Users Management
+  users: `${base_url}/users`,
+  userIncidents: (userId) => `${base_url}/users/${userId}/incidents`,
+  userPassages: (userId) => `${base_url}/users/${userId}/passages`,
+  userProfile: (userId) => `${base_url}/users/${userId}/profile`,
+  userVehicle: (userId) => `${base_url}/users/${userId}/vehicle`,
+  userUpdateRole: (userId) => `${base_url}/users/${userId}/role`,
+  userUpdateStatus: (userId) => `${base_url}/users/${userId}/status`,
+
+  // Sessions Management
+  sessions: `${base_url}/sessions`,
+  sessionsActive: `${base_url}/sessions/active`,
+  sessionById: (sessionId) => `${base_url}/sessions/${sessionId}`,
+  sessionClose: (sessionId) => `${base_url}/sessions/${sessionId}/close`,
+  sessionRefreshFile: (sessionId) => `${base_url}/sessions/${sessionId}/refresh-file`,
+  sessionResolve: (sessionId) => `${base_url}/sessions/${sessionId}/resolve`,
+  sessionUpdateCapacity: (sessionId) => `${base_url}/sessions/${sessionId}/capacity`,
+  sessionUpdateRadius: (sessionId) => `${base_url}/sessions/${sessionId}/radius`,
+  sessionUpdateStatus: (sessionId) => `${base_url}/sessions/${sessionId}/status`,
+  sessionUpdateVolumePerService: (sessionId) => `${base_url}/sessions/${sessionId}/volume-per-service`,
 };
 
 export const apiUrlAsset = {

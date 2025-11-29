@@ -26,8 +26,7 @@ import {
   TableRow,
   Chip,
 } from '@mui/material';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { LoadingButton } from '@mui/lab';
+import { TabContext, TabList, TabPanel, LoadingButton } from '@mui/lab';
 import { fNumber, fPercent } from 'src/utils/format-number';
 
 import { useNotification } from 'src/hooks/useNotification';
@@ -359,7 +358,11 @@ export default function ReportsView() {
                             <TableCell align="right">
                               <Chip
                                 label={`${fNumber(session.occupationRate)}%`}
-                                color={session.occupationRate > 80 ? 'error' : session.occupationRate > 50 ? 'warning' : 'success'}
+                                color={(() => {
+                                  if (session.occupationRate > 80) return 'error';
+                                  if (session.occupationRate > 50) return 'warning';
+                                  return 'success';
+                                })()}
                                 size="small"
                               />
                             </TableCell>
@@ -570,8 +573,18 @@ export default function ReportsView() {
               )}
             </Grid>
 
-            {mostActiveStations ? (
-              stations.length > 0 ? (
+            {(() => {
+              if (!mostActiveStations) {
+                return <Typography color="text.secondary">Cliquez sur "Charger" pour afficher les données</Typography>;
+              }
+              if (stations.length === 0) {
+                return (
+                  <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                    Aucune station active
+                  </Typography>
+                );
+              }
+              return (
                 <TableContainer component={Paper} variant="outlined">
                   <Table>
                     <TableHead>
@@ -607,14 +620,8 @@ export default function ReportsView() {
                     </TableBody>
                   </Table>
                 </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  Aucune station active
-                </Typography>
-              )
-            ) : (
-              <Typography color="text.secondary">Cliquez sur "Charger" pour afficher les données</Typography>
-            )}
+              );
+            })()}
           </Stack>
         </Card>
       </Stack>
@@ -645,8 +652,18 @@ export default function ReportsView() {
             </Box>
             <Divider />
 
-            {refusalExpirationRates ? (
-              rates.length > 0 ? (
+            {(() => {
+              if (!refusalExpirationRates) {
+                return <Typography color="text.secondary">Cliquez sur "Charger" pour afficher les données</Typography>;
+              }
+              if (rates.length === 0) {
+                return (
+                  <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                    Aucune donnée disponible
+                  </Typography>
+                );
+              }
+              return (
                 <TableContainer component={Paper} variant="outlined">
                   <Table>
                     <TableHead>
@@ -685,7 +702,11 @@ export default function ReportsView() {
                           <TableCell align="right">
                             <Chip
                               label={`${fNumber(rate.expirationRate)}%`}
-                              color={rate.expirationRate > 50 ? 'error' : rate.expirationRate > 25 ? 'warning' : 'default'}
+                              color={(() => {
+                                if (rate.expirationRate > 50) return 'error';
+                                if (rate.expirationRate > 25) return 'warning';
+                                return 'default';
+                              })()}
                               size="small"
                             />
                           </TableCell>
@@ -694,14 +715,8 @@ export default function ReportsView() {
                     </TableBody>
                   </Table>
                 </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  Aucune donnée disponible
-                </Typography>
-              )
-            ) : (
-              <Typography color="text.secondary">Cliquez sur "Charger" pour afficher les données</Typography>
-            )}
+              );
+            })()}
           </Stack>
         </Card>
       </Stack>

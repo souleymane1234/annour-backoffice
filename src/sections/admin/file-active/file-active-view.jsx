@@ -15,6 +15,7 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TableRow,
   Container,
   Typography,
   IconButton,
@@ -118,7 +119,6 @@ export default function FileActiveView() {
       setSessionId(sessionIdFromRoute);
       handleLoadFileActive(sessionIdFromRoute);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionIdFromRoute]);
 
   const handleUpdateStatus = async () => {

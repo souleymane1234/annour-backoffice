@@ -16,8 +16,7 @@ import {
   Switch,
   Alert,
 } from '@mui/material';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { LoadingButton } from '@mui/lab';
+import { TabContext, TabList, TabPanel, LoadingButton } from '@mui/lab';
 
 import { useNotification } from 'src/hooks/useNotification';
 
@@ -501,12 +500,15 @@ export default function ConfigurationView() {
           <Typography variant="h6">Configurations Existantes</Typography>
           <Divider />
 
-          {loadingConfig ? (
-            <Typography>Chargement...</Typography>
-          ) : Object.keys(configs).length === 0 ? (
-            <Typography color="text.secondary">Aucune configuration trouvée</Typography>
-          ) : (
-            <Stack spacing={2}>
+          {(() => {
+            if (loadingConfig) {
+              return <Typography>Chargement...</Typography>;
+            }
+            if (Object.keys(configs).length === 0) {
+              return <Typography color="text.secondary">Aucune configuration trouvée</Typography>;
+            }
+            return (
+              <Stack spacing={2}>
               {Object.entries(configs)
                 .filter(([key]) => !['notifications', 'passages', 'qrCode', 'stationRadius'].includes(key))
                 .map(([key, value]) => (
@@ -533,8 +535,9 @@ export default function ConfigurationView() {
                     </Stack>
                   </Card>
                 ))}
-            </Stack>
-          )}
+              </Stack>
+            );
+          })()}
         </Stack>
       </Card>
     </Stack>

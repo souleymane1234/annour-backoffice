@@ -335,20 +335,26 @@ export default function StationsView() {
                   </TableHead>
 
                   <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                          <Typography color="text.secondary">Chargement...</Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : stations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                          <Typography color="text.secondary">Aucune station trouvée</Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      stations
+                    {(() => {
+                      if (loading) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                              <Typography color="text.secondary">Chargement...</Typography>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                      if (stations.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                              <Typography color="text.secondary">Aucune station trouvée</Typography>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                      return stations
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((station) => (
                           <TableRow key={station.id} hover>
@@ -435,8 +441,8 @@ export default function StationsView() {
                               </Stack>
                             </TableCell>
                           </TableRow>
-                        ))
-                    )}
+                        ));
+                    })()}
                   </TableBody>
                 </Table>
               </Scrollbar>

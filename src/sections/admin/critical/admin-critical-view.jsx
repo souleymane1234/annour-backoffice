@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import {
@@ -18,16 +18,39 @@ import {
   DialogActions,
   AlertTitle,
   Divider,
+  Chip,
+  alpha,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  TablePagination,
 } from '@mui/material';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
+import { LoadingButton } from '@mui/lab';
 
 import { useNotification } from 'src/hooks/useNotification';
 
 import ConsumApi from 'src/services_workers/consum_api';
 
 import Iconify from 'src/components/iconify';
+import Scrollbar from 'src/components/scrollbar';
 
 // ----------------------------------------------------------------------
+
+const ROLE_COLORS = {
+  SUPERADMIN: 'error',
+  ADMIN: 'warning',
+  STATION: 'info',
+  POMPISTE: 'primary',
+  USER: 'default',
+};
 
 export default function AdminCriticalView() {
   const { contextHolder, showApiResponse, showError, showSuccess } = useNotification();
@@ -35,20 +58,26 @@ export default function AdminCriticalView() {
   const [currentTab, setCurrentTab] = useState('kill-switch');
   const [loading, setLoading] = useState(false);
 
+  // Data states
+  const [users, setUsers] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [pompistes, setPompistes] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingStations, setLoadingStations] = useState(false);
+  const [loadingPompistes, setLoadingPompistes] = useState(false);
+
+  // Pagination
+  const [usersPage, setUsersPage] = useState(0);
+  const [stationsPage, setStationsPage] = useState(0);
+  const [pompistesPage, setPompistesPage] = useState(0);
+  const [usersRowsPerPage, setUsersRowsPerPage] = useState(10);
+  const [stationsRowsPerPage, setStationsRowsPerPage] = useState(10);
+  const [pompistesRowsPerPage, setPompistesRowsPerPage] = useState(10);
+
   // Kill Switch Dialog
   const [killSwitchDialog, setKillSwitchDialog] = useState(false);
 
-  // User Actions Dialogs
-  const [userBanDialog, setUserBanDialog] = useState({ open: false, userId: '' });
-  const [userDeleteDialog, setUserDeleteDialog] = useState({ open: false, userId: '' });
-  const [userResetDialog, setUserResetDialog] = useState({ open: false, userId: '' });
-
-  // Station Actions Dialogs
-  const [stationBanDialog, setStationBanDialog] = useState({ open: false, stationId: '' });
-  const [stationDeleteDialog, setStationDeleteDialog] = useState({ open: false, stationId: '' });
-
   // Pompiste Actions Dialogs
-  const [pompisteBanDialog, setPompisteBanDialog] = useState({ open: false, pompisteId: '' });
   const [pompisteReassignDialog, setPompisteReassignDialog] = useState({ 
     open: false, 
     pompisteId: '', 
@@ -85,20 +114,91 @@ export default function AdminCriticalView() {
     }
   };
 
-  const handleBanUser = async () => {
-    if (!userBanDialog.userId.trim()) {
-      showError('Erreur', 'Veuillez entrer un ID utilisateur');
-      return;
+  // Load data functions
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const result = await ConsumApi.getUsers();
+      if (result.success) {
+        setUsers(Array.isArray(result.data) ? result.data : []);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      showError('Erreur', 'Impossible de charger les utilisateurs');
+    } finally {
+      setLoadingUsers(false);
     }
+  };
+
+  const loadStations = async () => {
+    setLoadingStations(true);
+    try {
+      const result = await ConsumApi.getStations();
+      if (result.success) {
+        setStations(Array.isArray(result.data) ? result.data : []);
+      }
+    } catch (error) {
+      console.error('Error loading stations:', error);
+      showError('Erreur', 'Impossible de charger les stations');
+    } finally {
+      setLoadingStations(false);
+    }
+  };
+
+  const loadPompistes = async () => {
+    setLoadingPompistes(true);
+    try {
+      const stationsResult = await ConsumApi.getStations();
+      if (stationsResult.success) {
+        const allPompistes = [];
+        const stationsData = Array.isArray(stationsResult.data) ? stationsResult.data : [];
+        for (const station of stationsData) {
+          try {
+            const stationDetailsResult = await ConsumApi.getStationById(station.id);
+            if (stationDetailsResult.success && stationDetailsResult.data?.pompistes) {
+              const stationPompistes = Array.isArray(stationDetailsResult.data.pompistes) 
+                ? stationDetailsResult.data.pompistes 
+                : [];
+              stationPompistes.forEach((pompiste) => {
+                allPompistes.push({ ...pompiste, stationId: station.id, stationName: station.name });
+              });
+            }
+          } catch (err) {
+            console.error(`Error loading pompistes for station ${station.id}:`, err);
+          }
+        }
+        setPompistes(allPompistes);
+      }
+    } catch (error) {
+      console.error('Error loading pompistes:', error);
+      showError('Erreur', 'Impossible de charger les pompistes');
+    } finally {
+      setLoadingPompistes(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentTab === 'users') {
+      loadUsers();
+    } else if (currentTab === 'stations') {
+      loadStations();
+    } else if (currentTab === 'pompistes') {
+      loadPompistes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTab]);
+
+  const handleBanUser = async (userId) => {
     setLoading(true);
     try {
-      const result = await ConsumApi.banUser(userBanDialog.userId);
-      showApiResponse(result, {
+      const result = await ConsumApi.banUser(userId);
+      const processed = showApiResponse(result, {
         successTitle: 'Utilisateur banni',
         errorTitle: 'Erreur',
       });
-      if (result.success) {
-        setUserBanDialog({ open: false, userId: '' });
+      if (processed.success) {
+        showSuccess('Succès', 'L\'utilisateur a été banni avec succès');
+        loadUsers();
       }
     } catch (error) {
       showError('Erreur', 'Impossible de bannir l\'utilisateur');
@@ -107,20 +207,17 @@ export default function AdminCriticalView() {
     }
   };
 
-  const handleDeleteUser = async () => {
-    if (!userDeleteDialog.userId.trim()) {
-      showError('Erreur', 'Veuillez entrer un ID utilisateur');
-      return;
-    }
+  const handleDeleteUser = async (userId) => {
     setLoading(true);
     try {
-      const result = await ConsumApi.deleteUserPermanent(userDeleteDialog.userId);
-      showApiResponse(result, {
+      const result = await ConsumApi.deleteUserPermanent(userId);
+      const processed = showApiResponse(result, {
         successTitle: 'Utilisateur supprimé',
         errorTitle: 'Erreur',
       });
-      if (result.success) {
-        setUserDeleteDialog({ open: false, userId: '' });
+      if (processed.success) {
+        showSuccess('Succès', 'L\'utilisateur a été supprimé avec succès');
+        loadUsers();
       }
     } catch (error) {
       showError('Erreur', 'Impossible de supprimer l\'utilisateur');
@@ -129,20 +226,17 @@ export default function AdminCriticalView() {
     }
   };
 
-  const handleResetUserPassages = async () => {
-    if (!userResetDialog.userId.trim()) {
-      showError('Erreur', 'Veuillez entrer un ID utilisateur');
-      return;
-    }
+  const handleResetUserPassages = async (userId) => {
     setLoading(true);
     try {
-      const result = await ConsumApi.resetUserPassages(userResetDialog.userId);
-      showApiResponse(result, {
+      const result = await ConsumApi.resetUserPassages(userId);
+      const processed = showApiResponse(result, {
         successTitle: 'Passages réinitialisés',
         errorTitle: 'Erreur',
       });
-      if (result.success) {
-        setUserResetDialog({ open: false, userId: '' });
+      if (processed.success) {
+        showSuccess('Succès', 'Les passages ont été réinitialisés avec succès');
+        loadUsers();
       }
     } catch (error) {
       showError('Erreur', 'Impossible de réinitialiser les passages');
@@ -151,20 +245,17 @@ export default function AdminCriticalView() {
     }
   };
 
-  const handleBanStation = async () => {
-    if (!stationBanDialog.stationId.trim()) {
-      showError('Erreur', 'Veuillez entrer un ID de station');
-      return;
-    }
+  const handleBanStation = async (stationId) => {
     setLoading(true);
     try {
-      const result = await ConsumApi.banStation(stationBanDialog.stationId);
-      showApiResponse(result, {
+      const result = await ConsumApi.banStation(stationId);
+      const processed = showApiResponse(result, {
         successTitle: 'Station bannie',
         errorTitle: 'Erreur',
       });
-      if (result.success) {
-        setStationBanDialog({ open: false, stationId: '' });
+      if (processed.success) {
+        showSuccess('Succès', 'La station a été bannie avec succès');
+        loadStations();
       }
     } catch (error) {
       showError('Erreur', 'Impossible de bannir la station');
@@ -173,20 +264,17 @@ export default function AdminCriticalView() {
     }
   };
 
-  const handleDeleteStation = async () => {
-    if (!stationDeleteDialog.stationId.trim()) {
-      showError('Erreur', 'Veuillez entrer un ID de station');
-      return;
-    }
+  const handleDeleteStation = async (stationId) => {
     setLoading(true);
     try {
-      const result = await ConsumApi.deleteStationPermanent(stationDeleteDialog.stationId);
-      showApiResponse(result, {
+      const result = await ConsumApi.deleteStationPermanent(stationId);
+      const processed = showApiResponse(result, {
         successTitle: 'Station supprimée',
         errorTitle: 'Erreur',
       });
-      if (result.success) {
-        setStationDeleteDialog({ open: false, stationId: '' });
+      if (processed.success) {
+        showSuccess('Succès', 'La station a été supprimée avec succès');
+        loadStations();
       }
     } catch (error) {
       showError('Erreur', 'Impossible de supprimer la station');
@@ -195,20 +283,17 @@ export default function AdminCriticalView() {
     }
   };
 
-  const handleBanPompiste = async () => {
-    if (!pompisteBanDialog.pompisteId.trim()) {
-      showError('Erreur', 'Veuillez entrer un ID de pompiste');
-      return;
-    }
+  const handleBanPompiste = async (pompisteId) => {
     setLoading(true);
     try {
-      const result = await ConsumApi.banPompiste(pompisteBanDialog.pompisteId);
-      showApiResponse(result, {
+      const result = await ConsumApi.banPompiste(pompisteId);
+      const processed = showApiResponse(result, {
         successTitle: 'Pompiste banni',
         errorTitle: 'Erreur',
       });
-      if (result.success) {
-        setPompisteBanDialog({ open: false, pompisteId: '' });
+      if (processed.success) {
+        showSuccess('Succès', 'Le pompiste a été banni avec succès');
+        loadPompistes();
       }
     } catch (error) {
       showError('Erreur', 'Impossible de bannir le pompiste');
@@ -296,25 +381,37 @@ export default function AdminCriticalView() {
     <Card sx={{ p: 3 }}>
       <Stack spacing={3}>
         <Box>
-          <Typography variant="h6" gutterBottom>
-            Kill Switch - Blocage Système d'Urgence
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Iconify icon="solar:power-bold" width={24} sx={{ color: 'primary.main' }} />
+            <Typography variant="h6">
+              Kill Switch - Blocage Système d&apos;Urgence
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
             ACTION CRITIQUE : Ferme toutes les sessions, désactive toutes les stations, suspend tous les utilisateurs (sauf Super Admin)
           </Typography>
         </Box>
 
-        <Alert severity="error">
+        <Divider />
+
+        <Alert severity="warning" icon={<Iconify icon="solar:danger-triangle-bold" width={24} />}>
           <AlertTitle>Attention</AlertTitle>
           Cette action est irréversible et affectera tous les utilisateurs du système.
         </Alert>
 
         <Button
           variant="contained"
-          color="error"
+          color="primary"
           size="large"
           startIcon={<Iconify icon="solar:danger-triangle-bold" />}
           onClick={() => setKillSwitchDialog(true)}
+          sx={{
+            alignSelf: 'flex-start',
+            px: 4,
+            py: 1.5,
+            boxShadow: 4,
+            '&:hover': { boxShadow: 6 },
+          }}
         >
           Activer le Kill Switch
         </Button>
@@ -323,153 +420,345 @@ export default function AdminCriticalView() {
   );
 
   const renderUserActionsSection = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={4}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Bannir un utilisateur</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Bannir un utilisateur (admin/station/user). Impossible de bannir un Super Admin.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setUserBanDialog({ open: true, userId: '' })}
-            >
-              Bannir un utilisateur
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-
-      <Grid item xs={12} md={4}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Supprimer un utilisateur</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Supprimer définitivement un utilisateur du système. Impossible de supprimer un Super Admin ou un utilisateur dans une file active.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setUserDeleteDialog({ open: true, userId: '' })}
-            >
-              Supprimer un utilisateur
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-
-      <Grid item xs={12} md={4}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Réinitialiser les passages</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Réinitialiser les passages d'un utilisateur.
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => setUserResetDialog({ open: true, userId: '' })}
-            >
-              Réinitialiser les passages
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-    </Grid>
+    <Card>
+      <TableContainer>
+        <Scrollbar>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Utilisateur</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, whiteSpace: 'nowrap' }}>Téléphone</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Rôle</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Statut</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }} align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loadingUsers ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                    <Typography color="text.secondary">Aucun utilisateur trouvé</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users
+                  .slice(usersPage * usersRowsPerPage, usersPage * usersRowsPerPage + usersRowsPerPage)
+                  .map((user) => (
+                    <TableRow key={user.id} hover>
+                      <TableCell>
+                        <Typography variant="subtitle2" noWrap>
+                          {user.firstName} {user.lastName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                        <Typography variant="body2" noWrap>
+                          {user.email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                        <Typography variant="body2" noWrap>
+                          {user.phone}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={user.role}
+                          color={ROLE_COLORS[user.role] || 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={user.isSuspended ? 'Suspendu' : 'Actif'}
+                          color={user.isSuspended ? 'error' : 'success'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={0.5} justifyContent="flex-end" flexWrap="nowrap">
+                          {user.role !== 'SUPERADMIN' && (
+                            <>
+                              <Tooltip title="Bannir">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleBanUser(user.id)}
+                                  disabled={loading}
+                                >
+                                  <Iconify icon="solar:user-block-bold" width={18} />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Supprimer">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  disabled={loading}
+                                >
+                                  <Iconify icon="solar:trash-bin-trash-bold" width={18} />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                          <Tooltip title="Réinitialiser passages">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleResetUserPassages(user.id)}
+                              disabled={loading}
+                            >
+                              <Iconify icon="solar:refresh-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+        </Scrollbar>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={users.length}
+        page={usersPage}
+        onPageChange={(event, newPage) => setUsersPage(newPage)}
+        rowsPerPage={usersRowsPerPage}
+        onRowsPerPageChange={(event) => {
+          setUsersRowsPerPage(parseInt(event.target.value, 10));
+          setUsersPage(0);
+        }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+      />
+    </Card>
   );
 
   const renderStationActionsSection = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={6}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Bannir une station</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Bannir une station du système.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setStationBanDialog({ open: true, stationId: '' })}
-            >
-              Bannir une station
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Supprimer une station</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Supprimer définitivement une station. Impossible si la station a des sessions actives.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setStationDeleteDialog({ open: true, stationId: '' })}
-            >
-              Supprimer une station
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-    </Grid>
+    <Card>
+      <TableContainer>
+        <Scrollbar>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Nom</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, whiteSpace: 'nowrap' }}>ID</TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, whiteSpace: 'nowrap' }}>Coordonnées</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Statut</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }} align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loadingStations ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : stations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                    <Typography color="text.secondary">Aucune station trouvée</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                stations
+                  .slice(stationsPage * stationsRowsPerPage, stationsPage * stationsRowsPerPage + stationsRowsPerPage)
+                  .map((station) => (
+                    <TableRow key={station.id} hover>
+                      <TableCell>
+                        <Typography variant="subtitle2" noWrap>
+                          {station.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                        <Typography variant="body2" noWrap sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                          {station.id}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                        <Typography variant="body2" noWrap>
+                          {station.latitude?.toFixed(4)}, {station.longitude?.toFixed(4)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={station.isActive ? 'Active' : 'Inactive'}
+                          color={station.isActive ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={0.5} justifyContent="flex-end" flexWrap="nowrap">
+                          <Tooltip title="Bannir">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleBanStation(station.id)}
+                              disabled={loading}
+                            >
+                              <Iconify icon="solar:shop-block-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Supprimer">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleDeleteStation(station.id)}
+                              disabled={loading}
+                            >
+                              <Iconify icon="solar:trash-bin-trash-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+        </Scrollbar>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={stations.length}
+        page={stationsPage}
+        onPageChange={(event, newPage) => setStationsPage(newPage)}
+        rowsPerPage={stationsRowsPerPage}
+        onRowsPerPageChange={(event) => {
+          setStationsRowsPerPage(parseInt(event.target.value, 10));
+          setStationsPage(0);
+        }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+      />
+    </Card>
   );
 
   const renderPompisteActionsSection = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={6}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Bannir un pompiste</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Bannir un pompiste du système.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setPompisteBanDialog({ open: true, pompisteId: '' })}
-            >
-              Bannir un pompiste
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <Card sx={{ p: 3, height: '100%' }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Réassigner un pompiste</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Réassigner un pompiste à une autre station. Impossible si le pompiste a des sessions actives.
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => setPompisteReassignDialog({ open: true, pompisteId: '', newStationId: '' })}
-            >
-              Réassigner un pompiste
-            </Button>
-          </Stack>
-        </Card>
-      </Grid>
-    </Grid>
+    <Card>
+      <TableContainer>
+        <Scrollbar>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Nom</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, whiteSpace: 'nowrap' }}>Email</TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, whiteSpace: 'nowrap' }}>Téléphone</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>Station</TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }} align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loadingPompistes ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : pompistes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                    <Typography color="text.secondary">Aucun pompiste trouvé</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pompistes
+                  .slice(pompistesPage * pompistesRowsPerPage, pompistesPage * pompistesRowsPerPage + pompistesRowsPerPage)
+                  .map((pompiste) => (
+                    <TableRow key={pompiste.id} hover>
+                      <TableCell>
+                        <Typography variant="subtitle2" noWrap>
+                          {pompiste.firstName} {pompiste.lastName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                        <Typography variant="body2" noWrap>
+                          {pompiste.email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                        <Typography variant="body2" noWrap>
+                          {pompiste.phone}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" noWrap>
+                          {pompiste.stationName || pompiste.stationId || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={0.5} justifyContent="flex-end" flexWrap="nowrap">
+                          <Tooltip title="Bannir">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleBanPompiste(pompiste.id)}
+                              disabled={loading}
+                            >
+                              <Iconify icon="solar:user-block-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Réassigner">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => setPompisteReassignDialog({ open: true, pompisteId: pompiste.id, newStationId: '' })}
+                              disabled={loading}
+                            >
+                              <Iconify icon="solar:user-change-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+        </Scrollbar>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={pompistes.length}
+        page={pompistesPage}
+        onPageChange={(event, newPage) => setPompistesPage(newPage)}
+        rowsPerPage={pompistesRowsPerPage}
+        onRowsPerPageChange={(event) => {
+          setPompistesRowsPerPage(parseInt(event.target.value, 10));
+          setPompistesPage(0);
+        }}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+      />
+    </Card>
   );
 
   const renderSessionActionsSection = () => (
     <Grid container spacing={3}>
       <Grid item xs={12} md={6}>
-        <Card sx={{ p: 3, height: '100%' }}>
+        <Card sx={{ p: 3, height: '100%', border: (theme) => `1px solid ${alpha(theme.palette.warning.main, 0.2)}` }}>
           <Stack spacing={2}>
-            <Typography variant="h6">Corriger un réservoir</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Iconify icon="solar:cup-bold" width={24} sx={{ color: 'warning.main' }} />
+              <Typography variant="h6">Corriger un réservoir</Typography>
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Modifier un réservoir (erreur déclarée) pour une session.
             </Typography>
+            <Divider />
             <Button
               variant="outlined"
+              color="warning"
+              startIcon={<Iconify icon="solar:cup-bold" width={20} />}
               onClick={() => setSessionReservoirDialog({ open: true, sessionId: '', correctedCapacity: '' })}
+              fullWidth
+              sx={{ mt: 'auto', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
             >
               Corriger un réservoir
             </Button>
@@ -478,15 +767,23 @@ export default function AdminCriticalView() {
       </Grid>
 
       <Grid item xs={12} md={6}>
-        <Card sx={{ p: 3, height: '100%' }}>
+        <Card sx={{ p: 3, height: '100%', border: (theme) => `1px solid ${alpha(theme.palette.warning.main, 0.2)}` }}>
           <Stack spacing={2}>
-            <Typography variant="h6">Corriger une capacité servie</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Iconify icon="solar:cup-star-bold" width={24} sx={{ color: 'warning.main' }} />
+              <Typography variant="h6">Corriger une capacité servie</Typography>
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Corriger une capacité servie (en cas de fraude) pour une session.
             </Typography>
+            <Divider />
             <Button
               variant="outlined"
+              color="warning"
+              startIcon={<Iconify icon="solar:cup-star-bold" width={20} />}
               onClick={() => setSessionServedDialog({ open: true, sessionId: '', correctedCapacity: '' })}
+              fullWidth
+              sx={{ mt: 'auto', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
             >
               Corriger une capacité servie
             </Button>
@@ -506,18 +803,34 @@ export default function AdminCriticalView() {
 
       <Container maxWidth="xl">
         <Stack spacing={3}>
-          <Box>
-            <Typography variant="h4">Actions Critiques</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Gestion des actions critiques réservées au Super Admin
-            </Typography>
-          </Box>
-
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            <AlertTitle>Attention</AlertTitle>
-            Toutes les actions de cette page sont irréversibles ou critiques. 
-            Utilisez-les avec précaution.
-          </Alert>
+          {/* Header */}
+          <Card
+            sx={{
+              p: 3,
+              background: (theme) =>
+                `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Iconify icon="solar:danger-triangle-bold" width={32} sx={{ color: 'primary.main' }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h4">Actions Critiques</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Gestion des actions critiques réservées au Super Admin
+                </Typography>
+              </Box>
+              <Chip
+                label="Super Admin uniquement"
+                color="primary"
+                size="medium"
+                icon={<Iconify icon="solar:shield-check-bold" width={18} />}
+              />
+            </Box>
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              <AlertTitle>Attention</AlertTitle>
+              Toutes les actions de cette page sont irréversibles ou critiques. Utilisez-les avec précaution.
+            </Alert>
+          </Card>
 
           <Card>
             <TabContext value={currentTab}>
@@ -586,7 +899,7 @@ export default function AdminCriticalView() {
       <Dialog open={killSwitchDialog} onClose={() => setKillSwitchDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Activer le Kill Switch</DialogTitle>
         <DialogContent>
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
             <AlertTitle>Action critique</AlertTitle>
             Cette action va :
             <ul>
@@ -601,177 +914,28 @@ export default function AdminCriticalView() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setKillSwitchDialog(false)}>Annuler</Button>
-          <Button
+          <LoadingButton
             variant="contained"
-            color="error"
+            color="primary"
             onClick={handleKillSwitch}
-            disabled={loading}
+            loading={loading}
           >
-            {loading ? 'Activation...' : 'Activer le Kill Switch'}
-          </Button>
+            Activer le Kill Switch
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
-      {/* User Ban Dialog */}
-      <Dialog open={userBanDialog.open} onClose={() => setUserBanDialog({ open: false, userId: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Bannir un utilisateur</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="ID Utilisateur"
-            value={userBanDialog.userId}
-            onChange={(e) => setUserBanDialog({ ...userBanDialog, userId: e.target.value })}
-            sx={{ mt: 2 }}
-            helperText="Entrez l'ID de l'utilisateur à bannir"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUserBanDialog({ open: false, userId: '' })}>Annuler</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleBanUser}
-            disabled={loading}
-          >
-            {loading ? 'Bannissement...' : 'Bannir'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* User Ban Dialog - Supprimé, maintenant via les boutons du tableau */}
 
-      {/* User Delete Dialog */}
-      <Dialog open={userDeleteDialog.open} onClose={() => setUserDeleteDialog({ open: false, userId: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Supprimer un utilisateur</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Cette action est irréversible. Impossible de supprimer un Super Admin ou un utilisateur dans une file active.
-          </Alert>
-          <TextField
-            fullWidth
-            label="ID Utilisateur"
-            value={userDeleteDialog.userId}
-            onChange={(e) => setUserDeleteDialog({ ...userDeleteDialog, userId: e.target.value })}
-            sx={{ mt: 2 }}
-            helperText="Entrez l'ID de l'utilisateur à supprimer"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUserDeleteDialog({ open: false, userId: '' })}>Annuler</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDeleteUser}
-            disabled={loading}
-          >
-            {loading ? 'Suppression...' : 'Supprimer définitivement'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* User Delete Dialog - Supprimé, maintenant via les boutons du tableau */}
 
-      {/* User Reset Passages Dialog */}
-      <Dialog open={userResetDialog.open} onClose={() => setUserResetDialog({ open: false, userId: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Réinitialiser les passages d'un utilisateur</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="ID Utilisateur"
-            value={userResetDialog.userId}
-            onChange={(e) => setUserResetDialog({ ...userResetDialog, userId: e.target.value })}
-            sx={{ mt: 2 }}
-            helperText="Entrez l'ID de l'utilisateur dont vous voulez réinitialiser les passages"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUserResetDialog({ open: false, userId: '' })}>Annuler</Button>
-          <Button
-            variant="contained"
-            onClick={handleResetUserPassages}
-            disabled={loading}
-          >
-            {loading ? 'Réinitialisation...' : 'Réinitialiser'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* User Reset Passages Dialog - Supprimé, maintenant via les boutons du tableau */}
 
-      {/* Station Ban Dialog */}
-      <Dialog open={stationBanDialog.open} onClose={() => setStationBanDialog({ open: false, stationId: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Bannir une station</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="ID Station"
-            value={stationBanDialog.stationId}
-            onChange={(e) => setStationBanDialog({ ...stationBanDialog, stationId: e.target.value })}
-            sx={{ mt: 2 }}
-            helperText="Entrez l'ID de la station à bannir"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStationBanDialog({ open: false, stationId: '' })}>Annuler</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleBanStation}
-            disabled={loading}
-          >
-            {loading ? 'Bannissement...' : 'Bannir'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Station Ban Dialog - Supprimé, maintenant via les boutons du tableau */}
 
-      {/* Station Delete Dialog */}
-      <Dialog open={stationDeleteDialog.open} onClose={() => setStationDeleteDialog({ open: false, stationId: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Supprimer une station</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Cette action est irréversible. Impossible de supprimer une station avec des sessions actives.
-          </Alert>
-          <TextField
-            fullWidth
-            label="ID Station"
-            value={stationDeleteDialog.stationId}
-            onChange={(e) => setStationDeleteDialog({ ...stationDeleteDialog, stationId: e.target.value })}
-            sx={{ mt: 2 }}
-            helperText="Entrez l'ID de la station à supprimer"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStationDeleteDialog({ open: false, stationId: '' })}>Annuler</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDeleteStation}
-            disabled={loading}
-          >
-            {loading ? 'Suppression...' : 'Supprimer définitivement'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Station Delete Dialog - Supprimé, maintenant via les boutons du tableau */}
 
-      {/* Pompiste Ban Dialog */}
-      <Dialog open={pompisteBanDialog.open} onClose={() => setPompisteBanDialog({ open: false, pompisteId: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Bannir un pompiste</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="ID Pompiste"
-            value={pompisteBanDialog.pompisteId}
-            onChange={(e) => setPompisteBanDialog({ ...pompisteBanDialog, pompisteId: e.target.value })}
-            sx={{ mt: 2 }}
-            helperText="Entrez l'ID du pompiste à bannir"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPompisteBanDialog({ open: false, pompisteId: '' })}>Annuler</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleBanPompiste}
-            disabled={loading}
-          >
-            {loading ? 'Bannissement...' : 'Bannir'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Pompiste Ban Dialog - Supprimé, maintenant via les boutons du tableau */}
 
       {/* Pompiste Reassign Dialog */}
       <Dialog open={pompisteReassignDialog.open} onClose={() => setPompisteReassignDialog({ open: false, pompisteId: '', newStationId: '' })} maxWidth="sm" fullWidth>
@@ -799,13 +963,14 @@ export default function AdminCriticalView() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPompisteReassignDialog({ open: false, pompisteId: '', newStationId: '' })}>Annuler</Button>
-          <Button
+          <LoadingButton
             variant="contained"
+            color="primary"
             onClick={handleReassignPompiste}
-            disabled={loading}
+            loading={loading}
           >
-            {loading ? 'Réassignation...' : 'Réassigner'}
-          </Button>
+            Réassigner
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -833,13 +998,14 @@ export default function AdminCriticalView() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSessionReservoirDialog({ open: false, sessionId: '', correctedCapacity: '' })}>Annuler</Button>
-          <Button
+          <LoadingButton
             variant="contained"
+            color="primary"
             onClick={handleCorrectReservoir}
-            disabled={loading}
+            loading={loading}
           >
-            {loading ? 'Correction...' : 'Corriger'}
-          </Button>
+            Corriger
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -870,13 +1036,14 @@ export default function AdminCriticalView() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSessionServedDialog({ open: false, sessionId: '', correctedCapacity: '' })}>Annuler</Button>
-          <Button
+          <LoadingButton
             variant="contained"
+            color="primary"
             onClick={handleCorrectServed}
-            disabled={loading}
+            loading={loading}
           >
-            {loading ? 'Correction...' : 'Corriger'}
-          </Button>
+            Corriger
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </>

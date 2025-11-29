@@ -96,7 +96,7 @@ export default function Nav({ openNav, onCloseNav }) {
           
           // Vérifier si le rôle de l'admin correspond à un des rôles autorisés
           if (protectedRoles.includes(adminRole)) {
-            return <NavItem key={item.title} item={item} />;
+          return <NavItem key={item.title} item={item} />;
           }
         }
         return null;

@@ -36,6 +36,14 @@ export const RolesPermissionsView = lazy(() => import('src/sections/admin/roles-
 export const StationsView = lazy(() => import('src/sections/admin/stations/stations-view'));
 export const StationDetailsView = lazy(() => import('src/sections/admin/stations/station-details-view'));
 
+// Users pages
+export const UsersView = lazy(() => import('src/sections/admin/users/users-view'));
+export const UserDetailsView = lazy(() => import('src/sections/admin/users/user-details-view'));
+
+// Sessions pages
+export const SessionsView = lazy(() => import('src/sections/admin/sessions/sessions-view'));
+export const SessionDetailsView = lazy(() => import('src/sections/admin/sessions/session-details-view'));
+
 // ----------------------------------------------------------------------
 
 export default function Router() {
@@ -78,6 +86,14 @@ export default function Router() {
         // Stations routes (Super Admin, Admin, Station)
         { path: routesName.adminStations, element: <StationsView /> },
         { path: routesName.adminStationDetails, element: <StationDetailsView /> },
+        
+        // Users routes (Super Admin, Admin)
+        { path: routesName.adminUsers, element: <UsersView /> },
+        { path: routesName.adminUserDetails, element: <UserDetailsView /> },
+        
+        // Sessions routes (Super Admin, Admin, Station)
+        { path: routesName.adminSessions, element: <SessionsView /> },
+        { path: routesName.adminSessionDetails, element: <SessionDetailsView /> },
       ],
     },
     {

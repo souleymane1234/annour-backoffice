@@ -19,7 +19,9 @@ import { useNotification } from 'src/hooks/useNotification';
 
 import { fNumber } from 'src/utils/format-number';
 
-import { ecoleRoutes } from 'src/constants/routes';
+// Note: ecoleRoutes has been removed as part of the cleanup
+// This file is deprecated and not used in routes
+// import { ecoleRoutes } from 'src/constants/routes';
 import ConsumApi from 'src/services_workers/consum_api';
 
 import Iconify from 'src/components/iconify';
@@ -225,7 +227,7 @@ export default function EcoleDashboardView() {
                 value={stats.formations}
                 icon="solar:document-bold"
                 color="primary"
-                href={ecoleRoutes.ecoleFormations}
+                href={undefined}
               />
             </Box>
 
@@ -235,7 +237,7 @@ export default function EcoleDashboardView() {
                 value={stats.filieres}
                 icon="solar:book-bookmark-bold"
                 color="info"
-                href={ecoleRoutes.ecoleFilieres}
+                href={undefined}
               />
             </Box>
 
@@ -245,7 +247,7 @@ export default function EcoleDashboardView() {
                 value={stats.programmes}
                 icon="solar:notebook-bold"
                 color="success"
-                href={ecoleRoutes.ecoleProgrammes}
+                href={undefined}
               />
             </Box>
 
@@ -255,7 +257,7 @@ export default function EcoleDashboardView() {
                 value={stats.services}
                 icon="solar:settings-bold"
                 color="warning"
-                href={ecoleRoutes.ecoleServices}
+                href={undefined}
               />
             </Box>
 
@@ -265,7 +267,7 @@ export default function EcoleDashboardView() {
                 value={stats.amenities}
                 icon="solar:home-bold"
                 color="secondary"
-                href={ecoleRoutes.ecoleAmenities}
+                href={undefined}
               />
             </Box>
 
@@ -275,7 +277,7 @@ export default function EcoleDashboardView() {
                 value={stats.strengths}
                 icon="solar:star-bold"
                 color="error"
-                href={ecoleRoutes.ecoleStrengths}
+                href={undefined}
               />
             </Box>
 
@@ -285,7 +287,7 @@ export default function EcoleDashboardView() {
                 value={stats.statistics}
                 icon="solar:chart-bold"
                 color="primary"
-                href={ecoleRoutes.ecoleStatistics}
+                href={undefined}
               />
             </Box>
 
@@ -295,7 +297,7 @@ export default function EcoleDashboardView() {
                 value={stats.media}
                 icon="solar:gallery-bold"
                 color="info"
-                href={ecoleRoutes.ecoleMedia}
+                href={undefined}
               />
             </Box>
           </Box>
@@ -326,7 +328,7 @@ export default function EcoleDashboardView() {
                 <Stack spacing={2}>
                   <Button
                     component={RouterLink}
-                    to={ecoleRoutes.ecoleProfil}
+                    to={undefined}
                     variant="contained"
                     size="large"
                     startIcon={<Iconify icon="solar:user-bold" />}
@@ -336,7 +338,7 @@ export default function EcoleDashboardView() {
                   </Button>
                   <Button
                     component={RouterLink}
-                    to={ecoleRoutes.ecoleDirectorWords}
+                    to={undefined}
                     variant="outlined"
                     size="large"
                     startIcon={<Iconify icon="solar:chat-round-bold" />}
@@ -366,7 +368,7 @@ export default function EcoleDashboardView() {
                 <Stack spacing={2}>
                   <Button
                     component={RouterLink}
-                    to={ecoleRoutes.ecoleFormations}
+                    to={undefined}
                     variant="contained"
                     size="large"
                     startIcon={<Iconify icon="solar:add-circle-bold" />}
@@ -376,7 +378,7 @@ export default function EcoleDashboardView() {
                   </Button>
                   <Button
                     component={RouterLink}
-                    to={ecoleRoutes.ecoleProgrammes}
+                    to={undefined}
                     variant="outlined"
                     size="large"
                     startIcon={<Iconify icon="solar:add-circle-bold" />}

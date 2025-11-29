@@ -33,6 +33,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  LinearProgress,
+  alpha,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { RouterLink } from 'src/routes/components';
@@ -233,112 +235,221 @@ export default function StationDetailsView() {
       <Container maxWidth="xl">
         <Stack spacing={3}>
           {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <Button
-                  startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
-                  onClick={() => router.back()}
-                  variant="outlined"
-                  size="small"
-                >
-                  Retour
-                </Button>
+          <Card
+            sx={{
+              p: 3,
+              background: (theme) =>
+                `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Button
+                    startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+                    onClick={() => router.back()}
+                    variant="outlined"
+                    size="small"
+                  >
+                    Retour
+                  </Button>
+                  <Chip
+                    label={`ID: ${station.id.slice(0, 8)}...`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontFamily: 'monospace' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
+                  <Typography variant="h4">{station.name}</Typography>
+                  <Chip
+                    label={station.isActive ? 'Active' : 'Inactive'}
+                    color={station.isActive ? 'success' : 'default'}
+                    size="medium"
+                    icon={
+                      <Iconify
+                        icon={station.isActive ? 'solar:check-circle-bold' : 'solar:close-circle-bold'}
+                        width={18}
+                      />
+                    }
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Informations détaillées et historique de la station
+                </Typography>
               </Box>
-              <Typography variant="h4">{station.name}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Informations détaillées et historique de la station
-              </Typography>
             </Box>
-            <Chip
-              label={station.isActive ? 'Active' : 'Inactive'}
-              color={station.isActive ? 'success' : 'default'}
-              size="large"
-            />
-          </Box>
+          </Card>
 
-          {/* Informations de base */}
+          {/* Informations principales */}
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+            {/* Informations Générales */}
+            <Grid item xs={12} lg={6}>
+              <Card sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>
                   Informations Générales
                 </Typography>
-                <Stack spacing={2}>
+                <Stack spacing={3}>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Nom
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:shop-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Nom de la station
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 0.5 }}>
+                      {station.name}
                     </Typography>
-                    <Typography variant="subtitle2">{station.name}</Typography>
                   </Box>
+
                   <Divider />
+
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Coordonnées
-                    </Typography>
-                    <Typography variant="subtitle2">
-                      {station.latitude?.toFixed(4)}, {station.longitude?.toFixed(4)}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:map-point-wave-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Coordonnées géographiques
+                      </Typography>
+                    </Box>
+                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                      <Grid item xs={6}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Latitude
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {station.latitude?.toFixed(6)}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Longitude
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {station.longitude?.toFixed(6)}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
                   </Box>
+
                   <Divider />
+
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Capacité
-                    </Typography>
-                    <Typography variant="subtitle2">
-                      {fNumber(station.capacityRemaining || 0)} / {fNumber(station.capacityTotal || 0)} L
-                    </Typography>
-                  </Box>
-                  <Divider />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Volume par service
-                    </Typography>
-                    <Typography variant="subtitle2">{fNumber(station.volumePerService || 0)} L</Typography>
-                  </Box>
-                  {station.createdAt && (
-                    <>
-                      <Divider />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Date de création
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {new Date(station.createdAt).toLocaleDateString('fr-FR', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Iconify icon="solar:cup-bold" width={20} sx={{ color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Capacité
                         </Typography>
                       </Box>
-                    </>
-                  )}
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {((1 - (station.capacityRemaining || 0) / (station.capacityTotal || 1)) * 100).toFixed(1)}% utilisée
+                      </Typography>
+                    </Box>
+                    <Stack spacing={1}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(1 - (station.capacityRemaining || 0) / (station.capacityTotal || 1)) * 100}
+                        color={
+                          (1 - (station.capacityRemaining || 0) / (station.capacityTotal || 1)) * 100 > 80
+                            ? 'error'
+                            : (1 - (station.capacityRemaining || 0) / (station.capacityTotal || 1)) * 100 > 50
+                            ? 'warning'
+                            : 'success'
+                        }
+                        sx={{ height: 8, borderRadius: 1 }}
+                      />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Restant
+                        </Typography>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {fNumber(station.capacityRemaining || 0)} / {fNumber(station.capacityTotal || 0)} L
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                  <Divider />
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Iconify icon="solar:cup-star-bold" width={20} sx={{ color: 'text.secondary' }} />
+                          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            Volume/service
+                          </Typography>
+                        </Box>
+                        <Typography variant="h6" color="primary.main">
+                          {fNumber(station.volumePerService || 0)} L
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    {station.createdAt && (
+                      <Grid item xs={6}>
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Iconify icon="solar:calendar-bold" width={20} sx={{ color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Création
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {new Date(station.createdAt).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(station.createdAt).toLocaleTimeString('fr-FR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
                 </Stack>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Card sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+            {/* Statistiques */}
+            <Grid item xs={12} lg={6}>
+              <Card sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>
                   Statistiques
                 </Typography>
                 {history ? (
-                  <Stack spacing={2}>
+                  <Stack spacing={3}>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Sessions totales
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Iconify icon="solar:graph-up-bold" width={20} sx={{ color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Sessions totales
+                        </Typography>
+                      </Box>
+                      <Typography variant="h4" color="primary.main">
+                        {history.totalSessions || 0}
                       </Typography>
-                      <Typography variant="h5">{history.totalSessions || 0}</Typography>
                     </Box>
+
                     <Divider />
+
                     <Grid container spacing={2}>
                       <Grid item xs={6}>
                         <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Sessions actives
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Iconify icon="solar:check-circle-bold" width={18} sx={{ color: 'success.main' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Actives
+                            </Typography>
+                          </Box>
                           <Typography variant="h5" color="success.main">
                             {history.activeSessions || 0}
                           </Typography>
@@ -346,39 +457,70 @@ export default function StationDetailsView() {
                       </Grid>
                       <Grid item xs={6}>
                         <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Sessions fermées
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Iconify icon="solar:close-circle-bold" width={18} sx={{ color: 'text.secondary' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Fermées
+                            </Typography>
+                          </Box>
                           <Typography variant="h5">{history.closedSessions || 0}</Typography>
                         </Box>
                       </Grid>
                     </Grid>
+
                     <Divider />
+
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Litres distribués
-                      </Typography>
-                      <Typography variant="h5">{fNumber(history.litersDistributed || 0)} L</Typography>
-                    </Box>
-                    <Divider />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Pompistes actifs
-                      </Typography>
-                      <Typography variant="h5">{history.activePompistes || 0}</Typography>
-                    </Box>
-                    <Divider />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Incidents
-                      </Typography>
-                      <Typography variant="h5" color={history.incidents > 0 ? 'error.main' : 'success.main'}>
-                        {history.incidents || 0}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Iconify icon="solar:cup-bold" width={20} sx={{ color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Litres distribués
+                        </Typography>
+                      </Box>
+                      <Typography variant="h4" color="primary.main">
+                        {fNumber(history.litersDistributed || 0)} L
                       </Typography>
                     </Box>
+
+                    <Divider />
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Iconify icon="solar:users-group-two-rounded-bold" width={18} sx={{ color: 'info.main' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Pompistes actifs
+                            </Typography>
+                          </Box>
+                          <Typography variant="h5" color="info.main">
+                            {history.activePompistes || 0}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Iconify
+                              icon="solar:danger-triangle-bold"
+                              width={18}
+                              sx={{ color: history.incidents > 0 ? 'error.main' : 'text.secondary' }}
+                            />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              Incidents
+                            </Typography>
+                          </Box>
+                          <Typography variant="h5" color={history.incidents > 0 ? 'error.main' : 'success.main'}>
+                            {history.incidents || 0}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
                   </Stack>
                 ) : (
-                  <Typography color="text.secondary">Aucune statistique disponible</Typography>
+                  <Alert severity="info" icon={<Iconify icon="solar:info-circle-bold" width={24} />}>
+                    Aucune statistique disponible pour cette station
+                  </Alert>
                 )}
               </Card>
             </Grid>
@@ -445,14 +587,19 @@ export default function StationDetailsView() {
                 Actualiser
               </Button>
             </Box>
-            {loadingFiles ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : activeFiles.length === 0 ? (
-              <Alert severity="info">Aucune file active</Alert>
-            ) : (
-              <Stack spacing={2}>
+            {(() => {
+              if (loadingFiles) {
+                return (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                );
+              }
+              if (activeFiles.length === 0) {
+                return <Alert severity="info">Aucune file active</Alert>;
+              }
+              return (
+                <Stack spacing={2}>
                 {activeFiles.map((session) => (
                   <Accordion key={session.id}>
                     <AccordionSummary expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}>
@@ -528,8 +675,9 @@ export default function StationDetailsView() {
                     </AccordionDetails>
                   </Accordion>
                 ))}
-              </Stack>
-            )}
+                </Stack>
+              );
+            })()}
           </Card>
 
           {/* Pompistes de la station */}
@@ -599,14 +747,19 @@ export default function StationDetailsView() {
               <Typography variant="subtitle2" sx={{ mb: 2 }}>
                 Performance des Pompistes
               </Typography>
-              {loadingPerformance ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
-              ) : performance.length === 0 ? (
-                <Alert severity="info">Aucune donnée de performance disponible</Alert>
-              ) : (
-                <TableContainer>
+              {(() => {
+                if (loadingPerformance) {
+                  return (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                    </Box>
+                  );
+                }
+                if (performance.length === 0) {
+                  return <Alert severity="info">Aucune donnée de performance disponible</Alert>;
+                }
+                return (
+                  <TableContainer>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
@@ -634,7 +787,8 @@ export default function StationDetailsView() {
                     </TableBody>
                   </Table>
                 </TableContainer>
-              )}
+                );
+              })()}
             </Box>
           </Card>
 

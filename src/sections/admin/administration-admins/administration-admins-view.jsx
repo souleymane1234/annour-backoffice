@@ -624,57 +624,65 @@ export default function AdministrationAdminsView() {
           Activité de {activityDialog.admin?.firstName} {activityDialog.admin?.lastName}
         </DialogTitle>
         <DialogContent>
-          {activityDialog.loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
-          ) : activityDialog.activity ? (
-            <Box sx={{ mt: 2 }}>
-              <Stack spacing={3}>
-                {activityDialog.activity.connexions && (
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Connexions
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {activityDialog.activity.connexions.length || 0} connexion(s)
-                    </Typography>
-                  </Box>
-                )}
-                {activityDialog.activity.stationActions && (
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Actions sur les stations
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {activityDialog.activity.stationActions.length || 0} action(s)
-                    </Typography>
-                  </Box>
-                )}
-                {activityDialog.activity.userActions && (
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Actions sur les utilisateurs
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {activityDialog.activity.userActions.length || 0} action(s)
-                    </Typography>
-                  </Box>
-                )}
-                {(!activityDialog.activity.connexions && 
-                  !activityDialog.activity.stationActions && 
-                  !activityDialog.activity.userActions) && (
-                  <Typography variant="body2" color="text.secondary">
-                    Aucune activité enregistrée
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Aucune activité trouvée
-            </Typography>
-          )}
+          {(() => {
+            if (activityDialog.loading) {
+              return (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              );
+            }
+            if (activityDialog.activity) {
+              return (
+                <Box sx={{ mt: 2 }}>
+                  <Stack spacing={3}>
+                    {activityDialog.activity.connexions && (
+                      <Box>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Connexions
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {activityDialog.activity.connexions.length || 0} connexion(s)
+                        </Typography>
+                      </Box>
+                    )}
+                    {activityDialog.activity.stationActions && (
+                      <Box>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Actions sur les stations
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {activityDialog.activity.stationActions.length || 0} action(s)
+                        </Typography>
+                      </Box>
+                    )}
+                    {activityDialog.activity.userActions && (
+                      <Box>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Actions sur les utilisateurs
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {activityDialog.activity.userActions.length || 0} action(s)
+                        </Typography>
+                      </Box>
+                    )}
+                    {(!activityDialog.activity.connexions && 
+                      !activityDialog.activity.stationActions && 
+                      !activityDialog.activity.userActions) && (
+                      <Typography variant="body2" color="text.secondary">
+                        Aucune activité enregistrée
+                      </Typography>
+                    )}
+                  </Stack>
+                </Box>
+              );
+            }
+            return (
+              <Typography variant="body2" color="text.secondary">
+                Aucune activité trouvée
+              </Typography>
+            );
+          })()}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setActivityDialog({ open: false, admin: null, activity: null, loading: false })}>
@@ -702,7 +710,10 @@ export default function AdministrationAdminsView() {
             onClick={handleToggleStatus}
             disabled={statusDialog.loading}
           >
-            {statusDialog.loading ? 'Modification...' : statusDialog.admin?.isSuspended ? 'Activer' : 'Suspendre'}
+            {(() => {
+              if (statusDialog.loading) return 'Modification...';
+              return statusDialog.admin?.isSuspended ? 'Activer' : 'Suspendre';
+            })()}
           </Button>
         </DialogActions>
       </Dialog>

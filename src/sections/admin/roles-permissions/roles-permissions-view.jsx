@@ -29,8 +29,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { LoadingButton } from '@mui/lab';
+import { TabContext, TabList, TabPanel, LoadingButton } from '@mui/lab';
 
 import { useNotification } from 'src/hooks/useNotification';
 
