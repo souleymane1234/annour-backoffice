@@ -41,6 +41,7 @@ import { fNumber } from 'src/utils/format-number';
 
 import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
+import MapPicker from 'src/components/map-picker';
 
 // ----------------------------------------------------------------------
 
@@ -462,7 +463,7 @@ export default function StationsView() {
       </Container>
 
       {/* Dialog de création */}
-      <Dialog open={createDialog.open} onClose={() => setCreateDialog({ open: false, loading: false })} maxWidth="md" fullWidth>
+      <Dialog open={createDialog.open} onClose={() => setCreateDialog({ open: false, loading: false })} maxWidth="lg" fullWidth>
         <DialogTitle>Créer une nouvelle station</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 2 }}>
@@ -473,6 +474,20 @@ export default function StationsView() {
               onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
               required
             />
+            <Box>
+              <MapPicker
+                latitude={createForm.latitude}
+                longitude={createForm.longitude}
+                onLocationChange={(lat, lng) => {
+                  setCreateForm({
+                    ...createForm,
+                    latitude: lat.toString(),
+                    longitude: lng.toString(),
+                  });
+                }}
+                height={300}
+              />
+            </Box>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
@@ -483,6 +498,7 @@ export default function StationsView() {
                   onChange={(e) => setCreateForm({ ...createForm, latitude: e.target.value })}
                   required
                   inputProps={{ step: 'any' }}
+                  helperText="Ou sélectionnez sur la carte ci-dessus"
                 />
               </Grid>
               <Grid item xs={6}>
@@ -494,6 +510,7 @@ export default function StationsView() {
                   onChange={(e) => setCreateForm({ ...createForm, longitude: e.target.value })}
                   required
                   inputProps={{ step: 'any' }}
+                  helperText="Ou sélectionnez sur la carte ci-dessus"
                 />
               </Grid>
             </Grid>
@@ -548,7 +565,7 @@ export default function StationsView() {
       </Dialog>
 
       {/* Dialog de modification */}
-      <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, station: null, loading: false })} maxWidth="md" fullWidth>
+      <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, station: null, loading: false })} maxWidth="lg" fullWidth>
         <DialogTitle>Modifier la station</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 2 }}>
@@ -559,6 +576,20 @@ export default function StationsView() {
               onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
               required
             />
+            <Box>
+              <MapPicker
+                latitude={editForm.latitude}
+                longitude={editForm.longitude}
+                onLocationChange={(lat, lng) => {
+                  setEditForm({
+                    ...editForm,
+                    latitude: lat.toString(),
+                    longitude: lng.toString(),
+                  });
+                }}
+                height={300}
+              />
+            </Box>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
@@ -569,6 +600,7 @@ export default function StationsView() {
                   onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
                   required
                   inputProps={{ step: 'any' }}
+                  helperText="Ou sélectionnez sur la carte ci-dessus"
                 />
               </Grid>
               <Grid item xs={6}>
@@ -580,6 +612,7 @@ export default function StationsView() {
                   onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
                   required
                   inputProps={{ step: 'any' }}
+                  helperText="Ou sélectionnez sur la carte ci-dessus"
                 />
               </Grid>
             </Grid>

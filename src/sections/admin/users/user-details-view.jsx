@@ -84,6 +84,10 @@ export default function UserDetailsView() {
       });
       if (processed.success && processed.data) {
         setProfile(processed.data);
+        // Le profil inclut déjà le véhicule, l'utiliser si disponible
+        if (processed.data.vehicle) {
+          setVehicle(processed.data.vehicle);
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -136,7 +140,8 @@ export default function UserDetailsView() {
     try {
       const result = await ConsumApi.getUserVehicle(userId);
       if (result.success && result.data) {
-        setVehicle(result.data);
+        // L'API retourne { user: {...}, vehicle: {...} }
+        setVehicle(result.data.vehicle || result.data);
       } else {
         setVehicle(null);
       }
@@ -571,28 +576,73 @@ export default function UserDetailsView() {
                 <CircularProgress />
               </Box>
             ) : vehicle ? (
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Type de véhicule
-                  </Typography>
-                  <Typography variant="subtitle2">{vehicle.type || '-'}</Typography>
-                </Box>
-                <Divider />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Marque
-                  </Typography>
-                  <Typography variant="subtitle2">{vehicle.brand || '-'}</Typography>
-                </Box>
-                <Divider />
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Modèle
-                  </Typography>
-                  <Typography variant="subtitle2">{vehicle.model || '-'}</Typography>
-                </Box>
-              </Stack>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:fuel-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Type de carburant
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {vehicle.fuelType || '-'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:car-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Marque
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {vehicle.brand || '-'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:car-side-view-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Modèle
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {vehicle.model || '-'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:card-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Plaque d&apos;immatriculation
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {vehicle.plate || '-'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Iconify icon="solar:fuel-tank-bold" width={20} sx={{ color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Capacité du réservoir
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {vehicle.capacityLiters ? `${vehicle.capacityLiters} L` : '-'}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             ) : (
               <Alert severity="info">Aucun véhicule associé à cet utilisateur</Alert>
             )}
