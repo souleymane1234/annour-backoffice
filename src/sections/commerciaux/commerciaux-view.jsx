@@ -25,6 +25,8 @@ import {
   DialogActions,
   TableContainer,
   TablePagination,
+  InputAdornment,
+  Alert,
 } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
@@ -61,7 +63,9 @@ export default function CommerciauxView() {
       firstname: '',
       lastname: '',
       telephone: '',
+      password: '',
     },
+    showPassword: false,
   });
   
   // Dialog pour confirmer la suppression
@@ -132,7 +136,9 @@ export default function CommerciauxView() {
         firstname: user.firstname || user.firstName || '',
         lastname: user.lastname || user.lastName || '',
         telephone: user.telephone || user.phoneNumber || user.phone || '',
+        password: '',
       },
+      showPassword: false,
     });
   };
 
@@ -146,7 +152,9 @@ export default function CommerciauxView() {
         firstname: '',
         lastname: '',
         telephone: '',
+        password: '',
       },
+      showPassword: false,
     });
   };
 
@@ -155,14 +163,44 @@ export default function CommerciauxView() {
 
     setEditDialog(prev => ({ ...prev, loading: true }));
     try {
-      const result = await ConsumApi.updateCommercial(editDialog.user.id, editDialog.formData);
+      // Préparer les données à envoyer (sans le mot de passe vide)
+      const updateData = {
+        email: editDialog.formData.email,
+        firstname: editDialog.formData.firstname,
+        lastname: editDialog.formData.lastname,
+        telephone: editDialog.formData.telephone,
+      };
+
+      // Si un nouveau mot de passe est fourni, l'ajouter
+      if (editDialog.formData.password && editDialog.formData.password.length >= 8) {
+        // Changer le mot de passe séparément
+        const passwordResult = await ConsumApi.changeUserPassword(editDialog.user.id, editDialog.formData.password);
+        if (!passwordResult.success) {
+          showApiResponse(passwordResult, {
+            successTitle: 'Mot de passe modifié',
+            errorTitle: 'Erreur de modification du mot de passe',
+          });
+          setEditDialog(prev => ({ ...prev, loading: false }));
+          return;
+        }
+      } else if (editDialog.formData.password && editDialog.formData.password.length > 0 && editDialog.formData.password.length < 8) {
+        showError('Erreur', 'Le mot de passe doit contenir au moins 8 caractères');
+        setEditDialog(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
+      // Mettre à jour les autres informations
+      const result = await ConsumApi.updateUser(editDialog.user.id, updateData);
       const processed = showApiResponse(result, {
         successTitle: 'Utilisateur modifié',
         errorTitle: 'Erreur de modification',
       });
 
       if (processed.success) {
-        showSuccess('Succès', 'Utilisateur modifié avec succès');
+        const successMessage = editDialog.formData.password && editDialog.formData.password.length >= 8
+          ? 'Utilisateur et mot de passe modifiés avec succès'
+          : 'Utilisateur modifié avec succès';
+        showSuccess('Succès', successMessage);
         handleCloseEditDialog();
         loadUsers();
       } else {
@@ -197,7 +235,7 @@ export default function CommerciauxView() {
 
     setDeleteDialog({ ...deleteDialog, loading: true });
     try {
-      const result = await ConsumApi.deleteCommercial(deleteDialog.user.id);
+      const result = await ConsumApi.deleteUser(deleteDialog.user.id);
       const processed = showApiResponse(result, {
         successTitle: 'Utilisateur supprimé',
         errorTitle: 'Erreur de suppression',
@@ -218,11 +256,12 @@ export default function CommerciauxView() {
 
   const handleSuspend = async (user) => {
     handleCloseActionMenu();
-    const newStatus = user.status === 'active' ? 'suspended' : 'active';
+    const isCurrentlySuspended = user.isSuspended || user.status === 'suspended';
+    const newStatus = isCurrentlySuspended ? 'active' : 'suspended';
     const action = newStatus === 'suspended' ? 'suspendre' : 'réactiver';
     
     try {
-      const result = await ConsumApi.suspendCommercial(user.id, newStatus);
+      const result = await ConsumApi.suspendUser(user.id, newStatus);
       const processed = showApiResponse(result, {
         successTitle: `Utilisateur ${action} avec succès`,
         errorTitle: `Erreur lors de la ${action}`,
@@ -368,8 +407,8 @@ export default function CommerciauxView() {
                           </TableCell>
                           <TableCell>
                             <Chip
-                              label={user.status === 'suspended' ? 'Suspendu' : 'Actif'}
-                              color={user.status === 'suspended' ? 'error' : 'success'}
+                              label={(user.isSuspended || user.status === 'suspended') ? 'Suspendu' : 'Actif'}
+                              color={(user.isSuspended || user.status === 'suspended') ? 'error' : 'success'}
                               size="small"
                             />
                           </TableCell>
@@ -425,13 +464,13 @@ export default function CommerciauxView() {
           </MenuItem>
           <MenuItem
             onClick={() => handleSuspend(actionMenu.user)}
-            sx={{ color: actionMenu.user?.status === 'active' ? 'warning.main' : 'success.main' }}
+            sx={{ color: (actionMenu.user?.isSuspended || actionMenu.user?.status === 'suspended') ? 'success.main' : 'warning.main' }}
           >
             <Iconify 
-              icon={actionMenu.user?.status === 'active' ? 'eva:lock-fill' : 'eva:unlock-fill'} 
+              icon={(actionMenu.user?.isSuspended || actionMenu.user?.status === 'suspended') ? 'eva:unlock-fill' : 'eva:lock-fill'} 
               sx={{ mr: 2 }} 
             />
-            {actionMenu.user?.status === 'active' ? 'Suspendre' : 'Réactiver'}
+            {(actionMenu.user?.isSuspended || actionMenu.user?.status === 'suspended') ? 'Réactiver' : 'Suspendre'}
           </MenuItem>
           <MenuItem
             onClick={() => handleDelete(actionMenu.user)}
@@ -492,6 +531,36 @@ export default function CommerciauxView() {
                   })
                 }
                 placeholder="+221771234567"
+              />
+              <Alert severity="info">
+                Laissez le champ mot de passe vide si vous ne souhaitez pas le modifier.
+              </Alert>
+              <TextField
+                fullWidth
+                label="Nouveau mot de passe (optionnel)"
+                type={editDialog.showPassword ? 'text' : 'password'}
+                value={editDialog.formData.password}
+                onChange={(e) =>
+                  setEditDialog({
+                    ...editDialog,
+                    formData: { ...editDialog.formData, password: e.target.value },
+                  })
+                }
+                helperText={editDialog.formData.password && editDialog.formData.password.length > 0 && editDialog.formData.password.length < 8
+                  ? 'Le mot de passe doit contenir au moins 8 caractères'
+                  : 'Laissez vide pour ne pas modifier le mot de passe'}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setEditDialog({ ...editDialog, showPassword: !editDialog.showPassword })}
+                        edge="end"
+                      >
+                        <Iconify icon={editDialog.showPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Stack>
           </DialogContent>

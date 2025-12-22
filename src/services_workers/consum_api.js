@@ -584,6 +584,16 @@ export default class ConsumApi {
     return this._authenticatedRequest('PATCH', apiUrl.suspendUser(id), { status });
   }
 
+  // Changer le mot de passe d'un utilisateur
+  // API: PATCH /users/{id}/change-password
+  // Body: { newPassword: string }
+  // Response 200: { message }
+  // Response 400: Erreur de validation (mot de passe trop court)
+  // Response 404: Utilisateur non trouvé
+  static async changeUserPassword(id, newPassword) {
+    return this._authenticatedRequest('PATCH', apiUrl.changeUserPassword(id), { newPassword });
+  }
+
   // Créer un commercial (utilise createUser avec conversion du rôle en service)
   // Cette fonction est maintenue pour compatibilité avec commercial-create-view.jsx
   static async createCommercial({ email, password, firstname, lastname, telephone, role }) {
@@ -1310,6 +1320,138 @@ export default class ConsumApi {
         errors: error.response?.data?.errors || []
       };
     }
+  }
+
+  // ========== CLIENT DOCUMENTS ==========
+
+  // Obtenir tous les documents d'un client
+  static async getClientDocuments(clientId) {
+    return this._authenticatedRequest('GET', apiUrl.clientDocuments(clientId));
+  }
+
+  // Uploader un document pour un client
+  static async uploadClientDocument(clientId, file, title) {
+    const token = AdminStorage.getTokenAdmin();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Aucun token trouvé',
+        errors: []
+      };
+    }
+
+    const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', title);
+
+    try {
+      const response = await ConsumApi.api.post(apiUrl.clientDocumentUpload(clientId), formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: authToken
+        }
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        return {
+          success: true,
+          data: response.data,
+          message: 'Document uploadé avec succès',
+          errors: []
+        };
+      }
+
+      return {
+        success: false,
+        message: response.data?.message || 'Erreur lors de l\'upload',
+        errors: response.data?.errors || []
+      };
+    } catch (error) {
+      console.error('Upload client document error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Erreur lors de l\'upload',
+        errors: error.response?.data?.errors || []
+      };
+    }
+  }
+
+  // Uploader plusieurs documents pour un client
+  static async uploadClientDocumentsMultiple(clientId, files, titles) {
+    const token = AdminStorage.getTokenAdmin();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Aucun token trouvé',
+        errors: []
+      };
+    }
+
+    if (files.length !== titles.length) {
+      return {
+        success: false,
+        message: 'Le nombre de fichiers doit correspondre au nombre de titres',
+        errors: ['Le nombre de fichiers doit correspondre au nombre de titres']
+      };
+    }
+
+    if (files.length > 10) {
+      return {
+        success: false,
+        message: 'Maximum 10 fichiers autorisés',
+        errors: ['Maximum 10 fichiers autorisés']
+      };
+    }
+
+    const authToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    const formData = new FormData();
+    
+    // Ajouter les fichiers
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    
+    // Ajouter les titres
+    titles.forEach((title) => {
+      formData.append('titles', title);
+    });
+
+    try {
+      const response = await ConsumApi.api.post(apiUrl.clientDocumentUploadMultiple(clientId), formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: authToken
+        }
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        return {
+          success: true,
+          data: response.data,
+          message: `${files.length} document(s) uploadé(s) avec succès`,
+          errors: []
+        };
+      }
+
+      return {
+        success: false,
+        message: response.data?.message || 'Erreur lors de l\'upload',
+        errors: response.data?.errors || []
+      };
+    } catch (error) {
+      console.error('Upload multiple client documents error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Erreur lors de l\'upload',
+        errors: error.response?.data?.errors || []
+      };
+    }
+  }
+
+  // Supprimer un document client
+  static async deleteClientDocument(documentId) {
+    return this._authenticatedRequest('DELETE', apiUrl.clientDocumentDelete(documentId));
   }
 }
 

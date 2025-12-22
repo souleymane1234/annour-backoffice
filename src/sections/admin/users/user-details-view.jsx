@@ -24,6 +24,7 @@ import {
   TableHead,
   Accordion,
   Typography,
+  TextField,
   InputLabel,
   DialogTitle,
   FormControl,
@@ -33,6 +34,8 @@ import {
   CircularProgress,
   AccordionSummary,
   AccordionDetails,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
@@ -71,6 +74,7 @@ export default function UserDetailsView() {
   // Dialogs
   const [statusDialog, setStatusDialog] = useState({ open: false, loading: false });
   const [roleDialog, setRoleDialog] = useState({ open: false, newRole: '', loading: false });
+  const [passwordDialog, setPasswordDialog] = useState({ open: false, newPassword: '', showPassword: false, loading: false });
 
   const loadProfile = async () => {
     setLoading(true);
@@ -204,6 +208,31 @@ export default function UserDetailsView() {
       showError('Erreur', 'Impossible de modifier le rôle de l\'utilisateur');
     } finally {
       setRoleDialog({ open: false, newRole: '', loading: false });
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordDialog.newPassword || passwordDialog.newPassword.length < 8) {
+      showError('Erreur', 'Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+
+    setPasswordDialog({ ...passwordDialog, loading: true });
+    try {
+      const result = await ConsumApi.changeUserPassword(userId, passwordDialog.newPassword);
+      const processed = showApiResponse(result, {
+        successTitle: 'Mot de passe modifié',
+        errorTitle: 'Erreur de modification',
+      });
+      if (processed.success) {
+        showSuccess('Succès', 'Le mot de passe a été modifié avec succès');
+        setPasswordDialog({ open: false, newPassword: '', showPassword: false, loading: false });
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      showError('Erreur', 'Impossible de modifier le mot de passe');
+    } finally {
+      setPasswordDialog({ ...passwordDialog, loading: false });
     }
   };
 
@@ -552,6 +581,30 @@ export default function UserDetailsView() {
                   </Button>
                 </Grid>
               )}
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<Iconify icon="solar:lock-password-bold" />}
+                  onClick={() => setPasswordDialog({ open: true, newPassword: '', showPassword: false, loading: false })}
+                  fullWidth
+                  sx={{
+                    py: 1.5,
+                    justifyContent: 'flex-start',
+                    borderWidth: 2,
+                    '&:hover': { borderWidth: 2 },
+                  }}
+                >
+                  <Box sx={{ textAlign: 'left', ml: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Changer le mot de passe
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Définir un nouveau mot de passe
+                    </Typography>
+                  </Box>
+                </Button>
+              </Grid>
             </Grid>
           </Card>
 
@@ -856,6 +909,56 @@ export default function UserDetailsView() {
             disabled={!roleDialog.newRole || roleDialog.newRole === profile?.role}
           >
             Modifier
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Password Dialog */}
+      <Dialog open={passwordDialog.open} onClose={() => setPasswordDialog({ open: false, newPassword: '', showPassword: false, loading: false })} maxWidth="sm" fullWidth>
+        <DialogTitle>Changer le mot de passe</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ pt: 2 }}>
+            <Alert severity="warning">
+              Vous allez modifier le mot de passe de <strong>{profile?.firstName} {profile?.lastName}</strong>.
+              L&apos;utilisateur devra utiliser le nouveau mot de passe pour se connecter.
+            </Alert>
+            <TextField
+              fullWidth
+              label="Nouveau mot de passe"
+              type={passwordDialog.showPassword ? 'text' : 'password'}
+              value={passwordDialog.newPassword}
+              onChange={(e) => setPasswordDialog({ ...passwordDialog, newPassword: e.target.value })}
+              helperText="Le mot de passe doit contenir au moins 8 caractères"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setPasswordDialog({ ...passwordDialog, showPassword: !passwordDialog.showPassword })}
+                      edge="end"
+                    >
+                      <Iconify icon={passwordDialog.showPassword ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Alert severity="info">
+              Le mot de passe sera hashé avant d&apos;être stocké en base de données.
+            </Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPasswordDialog({ open: false, newPassword: '', showPassword: false, loading: false })}>
+            Annuler
+          </Button>
+          <LoadingButton
+            variant="contained"
+            color="warning"
+            onClick={handleChangePassword}
+            loading={passwordDialog.loading}
+            disabled={!passwordDialog.newPassword || passwordDialog.newPassword.length < 8}
+          >
+            Modifier le mot de passe
           </LoadingButton>
         </DialogActions>
       </Dialog>

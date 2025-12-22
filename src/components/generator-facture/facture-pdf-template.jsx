@@ -273,6 +273,21 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     lineHeight: 1.4,
   },
+  // Cachet en bas à droite
+  cachetContainer: {
+    position: 'absolute',
+    bottom: 100,
+    right: 40,
+    width: 100,
+    height: 'auto',
+    zIndex: 2,
+  },
+  cachetImage: {
+    width: '100%',
+    height: 'auto',
+    maxHeight: 100,
+    objectFit: 'contain',
+  },
 });
 
 // Composant PDF de la facture
@@ -290,6 +305,11 @@ const FacturePdfDocument = ({ facture }) => {
     (typeof window !== 'undefined' 
       ? `${window.location.origin}/document/logo.jpg`
       : '/document/logo.jpg');
+  
+  const cachetImageSrc = facture._cachetImage || 
+    (typeof window !== 'undefined' 
+      ? `${window.location.origin}/assets/images/cachet.png`
+      : '/assets/images/cachet.png');
   
   // Calculer les totaux
   const totalHT = items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
@@ -458,7 +478,19 @@ const FacturePdfDocument = ({ facture }) => {
               </Text>
             </View>
           )}
+
         </View>
+
+        {/* Cachet en bas à droite */}
+        {cachetImageSrc && (
+          <View style={styles.cachetContainer}>
+            <Image
+              src={cachetImageSrc}
+              style={styles.cachetImage}
+              cache={false}
+            />
+          </View>
+        )}
 
         {/* Pied de page */}
         <View style={styles.footer} fixed>
@@ -470,6 +502,12 @@ const FacturePdfDocument = ({ facture }) => {
           </Text>
           <Text style={styles.footerText}>
             RCCM : CI-ABJ-03-2023-B13-11981 / NCC : 2304977 U . https://annour-travel.com/
+          </Text>
+          <Text style={styles.footerTextBold}>
+            Orange Money / Wave : 0789244760
+          </Text>
+          <Text style={styles.footerTextBold}>
+            RIB : CI93 CI16 6010 2301 0346 5241 0114
           </Text>
         </View>
       </Page>

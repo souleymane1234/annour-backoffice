@@ -183,8 +183,9 @@ export default function FacturesView() {
       showError('Erreur', 'Le client et le montant total sont obligatoires');
       return;
     }
-
+  
     setCreateDialog({ ...createDialog, loading: true });
+  
     try {
       const formData = {
         ...createDialog.formData,
@@ -195,22 +196,24 @@ export default function FacturesView() {
           unitPrice: parseFloat(item.unitPrice),
         })),
       };
-
+  
       const result = await ConsumApi.createFacture(formData);
       const processed = showApiResponse(result, {
         successTitle: 'Facture créée',
         errorTitle: 'Erreur de création',
       });
-
+  
       if (processed.success) {
         showSuccess('Succès', 'Facture créée avec succès');
         closeCreateDialog();
         loadFactures();
+      } else {
+        // En cas d'échec, on garde le modal ouvert mais on arrête le loading
+        setCreateDialog({ ...createDialog, loading: false });
       }
     } catch (error) {
       console.error('Error creating facture:', error);
       showError('Erreur', 'Impossible de créer la facture');
-    } finally {
       setCreateDialog({ ...createDialog, loading: false });
     }
   };

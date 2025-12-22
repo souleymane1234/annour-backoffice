@@ -18,7 +18,7 @@ import TableContainer from '@mui/material/TableContainer';
 
 import { useNotification } from 'src/hooks/useNotification';
 
-import { fNumber, fCurrency } from 'src/utils/format-number';
+import { fNumber } from 'src/utils/format-number';
 
 import ConsumApi from 'src/services_workers/consum_api';
 
@@ -313,7 +313,7 @@ export default function StatisticsClientsView() {
                           <TableCell>{client.nom}</TableCell>
                           <TableCell>{client.email}</TableCell>
                           <TableCell>{client.numero}</TableCell>
-                          <TableCell align="right">{fCurrency(client.totalRevenus)}</TableCell>
+                          <TableCell align="right">{fNumber(client.totalRevenus || 0)} FCFA</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

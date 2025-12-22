@@ -1,5 +1,6 @@
 // const base_url = import.meta.env.VITE_BASE_URL;
 const base_url = 'https://api.annour-travel.com';
+// const base_url = 'http://localhost:3001';
 const base_url_asset = import.meta.env.VITE_BASE_URL_ASSET;
 
 export const apiUrl = {
@@ -15,6 +16,7 @@ export const apiUrl = {
   updateUser: (id) => `${base_url}/users/${id}`,
   deleteUser: (id) => `${base_url}/users/${id}`,
   suspendUser: (id) => `${base_url}/users/${id}/suspend`,
+  changeUserPassword: (id) => `${base_url}/users/${id}/change-password`,
 
   // Clients
   clients: `${base_url}/clients`,
@@ -33,6 +35,11 @@ export const apiUrl = {
   sessionById: (sessionId) => `${base_url}/clients/sessions/${sessionId}`,
   sessionClose: (sessionId) => `${base_url}/clients/sessions/${sessionId}/close`,
   sessionConclusions: (sessionId) => `${base_url}/clients/sessions/${sessionId}/conclusions`,
+  // Client Documents
+  clientDocuments: (id) => `${base_url}/clients/${id}/documents`,
+  clientDocumentUpload: (id) => `${base_url}/clients/${id}/documents/upload`,
+  clientDocumentUploadMultiple: (id) => `${base_url}/clients/${id}/documents/upload-multiple`,
+  clientDocumentDelete: (documentId) => `${base_url}/clients/documents/${documentId}`,
 
   // Facturation
   factures: `${base_url}/facturation/factures`,

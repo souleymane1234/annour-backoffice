@@ -10,7 +10,9 @@ import Table from '@mui/material/Table';
 import Alert from '@mui/material/Alert';
 import { LoadingButton } from '@mui/lab';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
+import TextField from '@mui/material/TextField';
 import { alpha } from '@mui/material/styles';
 import TableRow from '@mui/material/TableRow';
 import Container from '@mui/material/Container';
@@ -18,6 +20,9 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import Typography from '@mui/material/Typography';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import TableContainer from '@mui/material/TableContainer';
 import LinearProgress from '@mui/material/LinearProgress';
 
@@ -34,13 +39,27 @@ import Iconify from 'src/components/iconify';
 // ----------------------------------------------------------------------
 
 export default function CommercialDashboardView() {
-  const { contextHolder, showError } = useNotification();
+  const { contextHolder, showError, showSuccess, showApiResponse } = useNotification();
   const { admin } = useAdminStore();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [rendezVous, setRendezVous] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Dialogs
+  const [reprogrammerDialog, setReprogrammerDialog] = useState({
+    open: false,
+    rendezVous: null,
+    newDate: '',
+    loading: false,
+  });
+  
+  const [terminerDialog, setTerminerDialog] = useState({
+    open: false,
+    rendezVous: null,
+    loading: false,
+  });
 
   const loadRendezVous = useCallback(async (isRefresh = false) => {
     try {
@@ -140,6 +159,100 @@ export default function CommercialDashboardView() {
   const handleViewClient = (clientId) => {
     if (clientId) {
       navigate(routesName.clientDetails.replace(':id', clientId));
+    }
+  };
+
+  const handleReprogrammer = (rdv) => {
+    setReprogrammerDialog({
+      open: true,
+      rendezVous: rdv,
+      newDate: rdv.dateRendezVous ? new Date(rdv.dateRendezVous).toISOString().slice(0, 16) : '',
+      loading: false,
+    });
+  };
+
+  const handleConfirmReprogrammer = async () => {
+    if (!reprogrammerDialog.rendezVous || !reprogrammerDialog.newDate) {
+      showError('Erreur', 'Veuillez sélectionner une nouvelle date');
+      return;
+    }
+  
+    setReprogrammerDialog({ ...reprogrammerDialog, loading: true });
+  
+    try {
+      // Convertir la date locale en format ISO 8601 (ex: 2024-12-25T10:00:00Z)
+      const dateObj = new Date(reprogrammerDialog.newDate);
+      const reminderDateISO = dateObj.toISOString();
+  
+      const result = await ConsumApi.reprogrammerRendezVous(
+        reprogrammerDialog.rendezVous.id,
+        admin.id,
+        reminderDateISO
+      );
+  
+      const processed = showApiResponse(result, {
+        successTitle: 'Rendez-vous reprogrammé',
+        errorTitle: 'Erreur de reprogrammation',
+      });
+  
+      if (processed.success) {
+        showSuccess('Succès', 'Le rendez-vous a été reprogrammé avec succès');
+        setReprogrammerDialog({ open: false, rendezVous: null, newDate: '', loading: false });
+        loadRendezVous(true);
+      } else {
+        // En cas d'échec, on garde le modal ouvert mais on arrête le loading
+        setReprogrammerDialog({ ...reprogrammerDialog, loading: false });
+      }
+    } catch (error) {
+      console.error('Error reprogramming rendez-vous:', error);
+      showError('Erreur', 'Impossible de reprogrammer le rendez-vous');
+      setReprogrammerDialog({ ...reprogrammerDialog, loading: false });
+    }
+  };
+
+  const handleTerminer = (rdv) => {
+    setTerminerDialog({
+      open: true,
+      rendezVous: rdv,
+      loading: false,
+    });
+  };
+
+  const handleConfirmTerminer = async () => {
+    if (!terminerDialog.rendezVous || !admin?.id) return;
+  
+    setTerminerDialog({ ...terminerDialog, loading: true });
+  
+    try {
+      const result = await ConsumApi.prendreRendezVous(terminerDialog.rendezVous.id, admin.id);
+      const processed = showApiResponse(result, {
+        successTitle: 'Rendez-vous terminé',
+        errorTitle: 'Erreur',
+      });
+  
+      if (processed.success) {
+        // Mettre à jour immédiatement le statut local pour que les statistiques se mettent à jour
+        setRendezVous((prevRendezVous) =>
+          prevRendezVous.map((rdv) =>
+            rdv.id === terminerDialog.rendezVous.id
+              ? { ...rdv, status: 'completed' }
+              : rdv
+          )
+        );
+        
+        showSuccess('Succès', 'Le rendez-vous a été marqué comme terminé');
+        setTerminerDialog({ open: false, rendezVous: null, loading: false });
+        
+        // Recharger depuis l'API pour avoir les données à jour
+        loadRendezVous(true);
+      } else {
+        // En cas d'échec, on garde le modal ouvert mais on arrête le loading
+        setTerminerDialog({ ...terminerDialog, loading: false });
+      }
+    } catch (error) {
+      console.error('Error completing rendez-vous:', error);
+      showError('Erreur', 'Impossible de terminer le rendez-vous');
+      setTerminerDialog({ ...terminerDialog, loading: false });
     }
   };
 
@@ -264,16 +377,40 @@ export default function CommercialDashboardView() {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        {rdv.clientId && (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<Iconify icon="solar:user-bold" width={16} />}
-                            onClick={() => handleViewClient(rdv.clientId)}
-                          >
-                            Voir client
-                          </Button>
-                        )}
+                        <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap">
+                          {rdv.clientId && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<Iconify icon="solar:user-bold" width={16} />}
+                              onClick={() => handleViewClient(rdv.clientId)}
+                            >
+                              Voir client
+                            </Button>
+                          )}
+                          {rdv.status !== 'completed' && (
+                            <>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="info"
+                                startIcon={<Iconify icon="solar:calendar-mark-bold" width={16} />}
+                                onClick={() => handleReprogrammer(rdv)}
+                              >
+                                Reprogrammer
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={<Iconify icon="solar:check-circle-bold" width={16} />}
+                                onClick={() => handleTerminer(rdv)}
+                              >
+                                Terminer
+                              </Button>
+                            </>
+                          )}
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -385,6 +522,100 @@ export default function CommercialDashboardView() {
             </Stack>
           </Card>
         </Box>
+
+        {/* Dialog Reprogrammer rendez-vous */}
+        <Dialog
+          open={reprogrammerDialog.open}
+          onClose={() => setReprogrammerDialog({ open: false, rendezVous: null, newDate: '', loading: false })}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Reprogrammer le rendez-vous</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <Alert severity="info">
+                <Typography variant="body2">
+                  Client: <strong>{reprogrammerDialog.rendezVous?.client?.nom || reprogrammerDialog.rendezVous?.clientNom || '-'}</strong>
+                </Typography>
+                <Typography variant="body2">
+                  Date actuelle: <strong>
+                    {reprogrammerDialog.rendezVous?.dateRendezVous
+                      ? `${fDate(new Date(reprogrammerDialog.rendezVous.dateRendezVous))} à ${fTime(new Date(reprogrammerDialog.rendezVous.dateRendezVous))}`
+                      : '-'}
+                  </strong>
+                </Typography>
+              </Alert>
+              <TextField
+                fullWidth
+                label="Nouvelle date et heure"
+                type="datetime-local"
+                value={reprogrammerDialog.newDate}
+                onChange={(e) => setReprogrammerDialog({ ...reprogrammerDialog, newDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setReprogrammerDialog({ open: false, rendezVous: null, newDate: '', loading: false })}
+              disabled={reprogrammerDialog.loading}
+            >
+              Annuler
+            </Button>
+            <LoadingButton
+              variant="contained"
+              onClick={handleConfirmReprogrammer}
+              loading={reprogrammerDialog.loading}
+              disabled={!reprogrammerDialog.newDate}
+              startIcon={<Iconify icon="solar:calendar-mark-bold" />}
+            >
+              Reprogrammer
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog Terminer rendez-vous */}
+        <Dialog
+          open={terminerDialog.open}
+          onClose={() => setTerminerDialog({ open: false, rendezVous: null, loading: false })}
+        >
+          <DialogTitle>Terminer le rendez-vous</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Êtes-vous sûr de vouloir marquer ce rendez-vous comme terminé ?
+            </Typography>
+            {terminerDialog.rendezVous && (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Client:</strong> {terminerDialog.rendezVous.client?.nom || terminerDialog.rendezVous.clientNom || '-'}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Date:</strong> {terminerDialog.rendezVous.dateRendezVous
+                    ? `${fDate(new Date(terminerDialog.rendezVous.dateRendezVous))} à ${fTime(new Date(terminerDialog.rendezVous.dateRendezVous))}`
+                    : '-'}
+                </Typography>
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setTerminerDialog({ open: false, rendezVous: null, loading: false })}
+              disabled={terminerDialog.loading}
+            >
+              Annuler
+            </Button>
+            <LoadingButton
+              variant="contained"
+              color="success"
+              onClick={handleConfirmTerminer}
+              loading={terminerDialog.loading}
+              startIcon={<Iconify icon="solar:check-circle-bold" />}
+            >
+              Terminer
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );

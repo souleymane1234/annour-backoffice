@@ -90,6 +90,14 @@ const FACTURE_STATUS_COLORS = {
   overdue: 'error',
 };
 
+const base_url = 'http://localhost:3001';
+
+const getDocumentUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${base_url}${url}`;
+};
+
 export default function ClientDetailsView() {
   const { id: clientId } = useParams();
   const router = useRouter();
@@ -150,6 +158,27 @@ export default function ClientDetailsView() {
     montantTotal: '',
     dateEcheance: '',
     clientAddress: '',
+  });
+
+  // Documents
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [uploadDocumentDialog, setUploadDocumentDialog] = useState({
+    open: false,
+    loading: false,
+    file: null,
+    title: '',
+  });
+  const [uploadMultipleDialog, setUploadMultipleDialog] = useState({
+    open: false,
+    loading: false,
+    files: [],
+    titles: [],
+  });
+  const [deleteDocumentDialog, setDeleteDocumentDialog] = useState({
+    open: false,
+    document: null,
+    loading: false,
   });
 
   // Helper pour obtenir le nom d'un commercial à partir de assignedTo
@@ -287,6 +316,151 @@ export default function ClientDetailsView() {
       loadSessionFactures(activeSession.id);
     }
   }, [currentTab, activeSession]);
+
+  // Charger les documents quand on passe à l'onglet Documents
+  useEffect(() => {
+    if (currentTab === 'documents' && clientId) {
+      loadDocuments();
+    }
+  }, [currentTab, clientId]);
+
+  const loadDocuments = async () => {
+    if (!clientId) return;
+    setLoadingDocuments(true);
+    try {
+      const result = await ConsumApi.getClientDocuments(clientId);
+      if (result.success && Array.isArray(result.data)) {
+        setDocuments(result.data);
+      } else {
+        setDocuments([]);
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      setDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    if (!uploadDocumentDialog.file || !uploadDocumentDialog.title.trim()) {
+      showError('Erreur', 'Veuillez sélectionner un fichier et entrer un titre');
+      return;
+    }
+  
+    setUploadDocumentDialog({ ...uploadDocumentDialog, loading: true });
+  
+    try {
+      const result = await ConsumApi.uploadClientDocument(
+        clientId,
+        uploadDocumentDialog.file,
+        uploadDocumentDialog.title
+      );
+  
+      showApiResponse(result, {
+        successTitle: 'Document uploadé',
+        errorTitle: 'Erreur d\'upload',
+      });
+  
+      if (result.success) {
+        setUploadDocumentDialog({ open: false, loading: false, file: null, title: '' });
+        loadDocuments();
+      } else {
+        // En cas d'échec, on garde le modal ouvert mais on arrête le loading
+        setUploadDocumentDialog({ ...uploadDocumentDialog, loading: false });
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      showError('Erreur', 'Une erreur est survenue lors de l\'upload');
+      setUploadDocumentDialog({ ...uploadDocumentDialog, loading: false });
+    }
+  };
+
+  const handleUploadMultipleDocuments = async () => {
+    if (uploadMultipleDialog.files.length === 0) {
+      showError('Erreur', 'Veuillez sélectionner au moins un fichier');
+      return;
+    }
+  
+    if (uploadMultipleDialog.files.length !== uploadMultipleDialog.titles.length) {
+      showError('Erreur', 'Le nombre de fichiers doit correspondre au nombre de titres');
+      return;
+    }
+  
+    // Vérifier que tous les titres sont remplis
+    const emptyTitles = uploadMultipleDialog.titles.some((title) => !title.trim());
+    if (emptyTitles) {
+      showError('Erreur', 'Tous les titres doivent être remplis');
+      return;
+    }
+  
+    setUploadMultipleDialog({ ...uploadMultipleDialog, loading: true });
+  
+    try {
+      const result = await ConsumApi.uploadClientDocumentsMultiple(
+        clientId,
+        uploadMultipleDialog.files,
+        uploadMultipleDialog.titles
+      );
+  
+      showApiResponse(result, {
+        successTitle: 'Documents uploadés',
+        errorTitle: 'Erreur d\'upload',
+      });
+  
+      if (result.success) {
+        setUploadMultipleDialog({ open: false, loading: false, files: [], titles: [] });
+        loadDocuments();
+      } else {
+        // En cas d'échec, on garde le modal ouvert mais on arrête le loading
+        setUploadMultipleDialog({ ...uploadMultipleDialog, loading: false });
+      }
+    } catch (error) {
+      console.error('Error uploading multiple documents:', error);
+      showError('Erreur', 'Une erreur est survenue lors de l\'upload');
+      setUploadMultipleDialog({ ...uploadMultipleDialog, loading: false });
+    }
+  };
+
+  const handleDeleteDocument = async () => {
+    if (!deleteDocumentDialog.document) return;
+
+    setDeleteDocumentDialog({ ...deleteDocumentDialog, loading: true });
+    try {
+      const result = await ConsumApi.deleteClientDocument(deleteDocumentDialog.document.id);
+
+      showApiResponse(result, {
+        successTitle: 'Document supprimé',
+        errorTitle: 'Erreur de suppression',
+      });
+
+      if (result.success) {
+        setDeleteDocumentDialog({ open: false, document: null, loading: false });
+        loadDocuments();
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      showError('Erreur', 'Une erreur est survenue lors de la suppression');
+    } finally {
+      setDeleteDocumentDialog({ ...deleteDocumentDialog, loading: false });
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
+  };
+
+  const getFileIcon = (mimeType) => {
+    if (mimeType?.startsWith('image/')) return 'solar:gallery-bold';
+    if (mimeType === 'application/pdf') return 'solar:file-text-bold';
+    if (mimeType?.includes('word')) return 'solar:file-bold';
+    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return 'solar:file-bold';
+    return 'solar:document-bold';
+  };
 
 
   const handleOpenSession = async () => {
@@ -702,6 +876,12 @@ export default function ClientDetailsView() {
               label="Informations"
               value="info"
               icon={<Iconify icon="solar:user-bold" />}
+              iconPosition="start"
+            />
+            <Tab
+              label="Documents"
+              value="documents"
+              icon={<Iconify icon="solar:folder-with-files-bold" />}
               iconPosition="start"
             />
           </Tabs>
@@ -1254,6 +1434,110 @@ export default function ClientDetailsView() {
           </Grid>
         )}
 
+        {currentTab === 'documents' && (
+          <Card sx={{ p: 3 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h6">Documents du client</Typography>
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Iconify icon="solar:upload-bold" />}
+                  onClick={() => setUploadDocumentDialog({ open: true, loading: false, file: null, title: '' })}
+                >
+                  Uploader un document
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Iconify icon="solar:folder-with-files-bold" />}
+                  onClick={() => setUploadMultipleDialog({ open: true, loading: false, files: [], titles: [] })}
+                >
+                  Uploader plusieurs documents
+                </Button>
+              </Stack>
+            </Stack>
+
+            {loadingDocuments && (
+              <Box sx={{ py: 5 }}>
+                <LinearProgress />
+                <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+                  Chargement des documents...
+                </Typography>
+              </Box>
+            )}
+            {!loadingDocuments && documents.length === 0 && (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  Aucun document uploadé pour ce client.
+                </Typography>
+              </Alert>
+            )}
+            {!loadingDocuments && documents.length > 0 && (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Document</TableCell>
+                      <TableCell>Titre</TableCell>
+                      <TableCell>Taille</TableCell>
+                      <TableCell>Date d&apos;upload</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {documents.map((document) => (
+                      <TableRow key={document.id}>
+                        <TableCell>
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            <Iconify icon={getFileIcon(document.mimeType)} width={24} />
+                            <Typography variant="body2">{document.fileName}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {document.title}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatFileSize(document.fileSize)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {document.createdAt ? fDate(document.createdAt) : '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            {document.fileUrl && (
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => window.open(getDocumentUrl(document.fileUrl), '_blank')}
+                                title="Télécharger"
+                              >
+                                <Iconify icon="solar:download-bold" />
+                              </IconButton>
+                            )}
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setDeleteDocumentDialog({ open: true, document, loading: false })}
+                              title="Supprimer"
+                            >
+                              <Iconify icon="solar:trash-bin-trash-bold" />
+                            </IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Card>
+        )}
+
         {/* Dialog ouvrir session */}
         <Dialog
           open={openSessionDialog.open}
@@ -1573,6 +1857,184 @@ export default function ClientDetailsView() {
               startIcon={<Iconify icon="solar:bill-list-bold" />}
             >
               Créer la facture
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog uploader un document */}
+        <Dialog
+          open={uploadDocumentDialog.open}
+          onClose={() => setUploadDocumentDialog({ open: false, loading: false, file: null, title: '' })}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Uploader un document</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <TextField
+                label="Titre du document *"
+                fullWidth
+                value={uploadDocumentDialog.title}
+                onChange={(e) => setUploadDocumentDialog({ ...uploadDocumentDialog, title: e.target.value })}
+                placeholder="Ex: Passeport, Visa, etc."
+              />
+              <Box>
+                <input
+                  accept="*/*"
+                  style={{ display: 'none' }}
+                  id="upload-document-file"
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setUploadDocumentDialog({ ...uploadDocumentDialog, file });
+                    }
+                  }}
+                />
+                <label htmlFor="upload-document-file">
+                  <Button variant="outlined" component="span" fullWidth startIcon={<Iconify icon="solar:upload-bold" />}>
+                    {uploadDocumentDialog.file ? uploadDocumentDialog.file.name : 'Sélectionner un fichier'}
+                  </Button>
+                </label>
+                {uploadDocumentDialog.file && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Taille: {formatFileSize(uploadDocumentDialog.file.size)}
+                  </Typography>
+                )}
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setUploadDocumentDialog({ open: false, loading: false, file: null, title: '' })}>
+              Annuler
+            </Button>
+            <LoadingButton
+              variant="contained"
+              onClick={handleUploadDocument}
+              loading={uploadDocumentDialog.loading}
+              disabled={!uploadDocumentDialog.file || !uploadDocumentDialog.title.trim()}
+              startIcon={<Iconify icon="solar:upload-bold" />}
+            >
+              Uploader
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog uploader plusieurs documents */}
+        <Dialog
+          open={uploadMultipleDialog.open}
+          onClose={() => setUploadMultipleDialog({ open: false, loading: false, files: [], titles: [] })}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Uploader plusieurs documents</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ mt: 1 }}>
+              <Alert severity="info">
+                <Typography variant="body2">
+                  Vous pouvez uploader jusqu&apos;à 10 fichiers. Les titres doivent être dans le même ordre que les fichiers.
+                </Typography>
+              </Alert>
+              <Box>
+                <input
+                  accept="*/*"
+                  style={{ display: 'none' }}
+                  id="upload-multiple-files"
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length > 10) {
+                      showError('Erreur', 'Maximum 10 fichiers autorisés');
+                      return;
+                    }
+                    const titles = files.map(() => '');
+                    setUploadMultipleDialog({ ...uploadMultipleDialog, files, titles });
+                  }}
+                />
+                <label htmlFor="upload-multiple-files">
+                  <Button variant="outlined" component="span" fullWidth startIcon={<Iconify icon="solar:folder-with-files-bold" />}>
+                    Sélectionner les fichiers ({uploadMultipleDialog.files.length})
+                  </Button>
+                </label>
+              </Box>
+              {uploadMultipleDialog.files.length > 0 && (
+                <Stack spacing={2}>
+                  {uploadMultipleDialog.files.map((file, index) => (
+                    <Box key={index} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                      <Stack spacing={2}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Iconify icon={getFileIcon(file.type)} width={24} />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {file.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatFileSize(file.size)}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        <TextField
+                          label={`Titre pour ${file.name} *`}
+                          fullWidth
+                          size="small"
+                          value={uploadMultipleDialog.titles[index] || ''}
+                          onChange={(e) => {
+                            const newTitles = [...uploadMultipleDialog.titles];
+                            newTitles[index] = e.target.value;
+                            setUploadMultipleDialog({ ...uploadMultipleDialog, titles: newTitles });
+                          }}
+                          placeholder="Ex: Passeport, Visa, etc."
+                        />
+                      </Stack>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setUploadMultipleDialog({ open: false, loading: false, files: [], titles: [] })}>
+              Annuler
+            </Button>
+            <LoadingButton
+              variant="contained"
+              onClick={handleUploadMultipleDocuments}
+              loading={uploadMultipleDialog.loading}
+              disabled={uploadMultipleDialog.files.length === 0}
+              startIcon={<Iconify icon="solar:upload-bold" />}
+            >
+              Uploader {uploadMultipleDialog.files.length} document(s)
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog supprimer document */}
+        <Dialog
+          open={deleteDocumentDialog.open}
+          onClose={() => setDeleteDocumentDialog({ open: false, document: null, loading: false })}
+        >
+          <DialogTitle>Supprimer le document</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Êtes-vous sûr de vouloir supprimer le document &quot;{deleteDocumentDialog.document?.title}&quot; ?
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Cette action est irréversible.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDocumentDialog({ open: false, document: null, loading: false })}>
+              Annuler
+            </Button>
+            <LoadingButton
+              variant="contained"
+              color="error"
+              onClick={handleDeleteDocument}
+              loading={deleteDocumentDialog.loading}
+              startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
+            >
+              Supprimer
             </LoadingButton>
           </DialogActions>
         </Dialog>
