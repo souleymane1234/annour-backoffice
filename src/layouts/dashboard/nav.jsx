@@ -222,16 +222,18 @@ Nav.propTypes = {
 // ----------------------------------------------------------------------
 
 // Fonction pour obtenir les éléments de sous-menu selon le titre
-function getSubMenuItems(title) {
+function getSubMenuItems(title, adminRole = null) {
+  const role = adminRole ? String(adminRole).trim().toUpperCase() : null;
+  
   const subMenus = {
     'Facturation': [
-      { title: 'Factures', path: '/facturation/factures', icon: 'eva:file-text-fill' },
+      { title: 'Reçu', path: '/facturation/factures', icon: 'eva:file-text-fill' },
       { title: 'Factures Proforma', path: '/facturation/factures/categories', icon: 'eva:layers-fill' },
       { title: 'Bons de sortie', path: '/facturation/bons-de-sortie', icon: 'eva:file-remove-fill' },
-      { title: 'Bilan financier', path: '/facturation/bilan', icon: 'eva:pie-chart-fill' },
+      { title: 'Bilan financier', path: '/facturation/bilan', icon: 'eva:pie-chart-fill', restrictedRoles: ['GERANT'] },
     ],
     'Statistiques': [
-      { title: 'Statistiques Globales', path: '/statistics/global', icon: 'eva:bar-chart-2-fill' },
+      { title: 'Statistiques Globales', path: '/statistics/global', icon: 'eva:bar-chart-2-fill', restrictedRoles: ['GERANT'] },
       { title: 'Statistiques Clients', path: '/statistics/clients', icon: 'eva:people-fill' },
     ],
     'Écoles': [
@@ -271,7 +273,19 @@ function getSubMenuItems(title) {
     ],
   };
   
-  return subMenus[title] || [];
+  const items = subMenus[title] || [];
+  
+  // Filtrer les éléments restreints selon le rôle
+  if (role) {
+    return items.filter(item => {
+      if (item.restrictedRoles && item.restrictedRoles.includes(role)) {
+        return false;
+      }
+      return true;
+    });
+  }
+  
+  return items;
 }
 
 // Composant pour les éléments de sous-menu
@@ -335,7 +349,11 @@ function NavSubItem({ item, parentTitle }) {
 
 function NavItem({ item }) {
   const pathname = usePathname();
+  const { admin } = useAdminStore();
   const { childrenPath = [] } = item;
+
+  // Obtenir le rôle de l'admin pour filtrer les sous-menus
+  const adminRole = admin ? (admin.role || admin.service || '').trim().toUpperCase() : null;
 
   // Vérifier si le pathname actuel correspond à l'un des chemins enfants
   const active = childrenPath.some(childPath => {
@@ -361,7 +379,7 @@ function NavItem({ item }) {
   });
 
   // Si l'item a des sous-menus définis, afficher directement les sous-menus avec tabulation
-  const subMenuItems = getSubMenuItems(item.title);
+  const subMenuItems = getSubMenuItems(item.title, adminRole);
   if (subMenuItems.length > 0 && childrenPath.length > 1) {
     return (
       <Box>
@@ -390,7 +408,7 @@ function NavItem({ item }) {
         </Box>
         
         <Stack component="nav" spacing={0.5} sx={{ pl: 3 }}>
-            {getSubMenuItems(item.title).map((subItem) => (
+            {subMenuItems.map((subItem) => (
               <NavSubItem key={subItem.path} item={subItem} parentTitle={item.title} />
             ))}
           </Stack>

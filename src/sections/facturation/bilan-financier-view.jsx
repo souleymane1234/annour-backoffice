@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 
 import { useNotification } from 'src/hooks/useNotification';
+import { useAdminStore } from 'src/store/useAdminStore';
 
 import { fNumber } from 'src/utils/format-number';
 
@@ -42,7 +43,8 @@ const MONTHS = [
 ];
 
 export default function BilanFinancierView() {
-  const { contextHolder } = useNotification();
+  const { contextHolder, showError } = useNotification();
+  const { admin } = useAdminStore();
   const [currentTab, setCurrentTab] = useState('mensuel');
   const [loading, setLoading] = useState(false);
 
@@ -94,12 +96,19 @@ export default function BilanFinancierView() {
   }, [selectedYearAnnuel]);
 
   useEffect(() => {
+    const role = (admin?.role || '').toUpperCase();
+    if (role === 'GERANT') {
+      setLoading(false);
+      showError('Accès refusé', 'Le bilan financier est réservé aux profils autorisés.');
+      return;
+    }
+
     if (currentTab === 'mensuel') {
       loadBilanMensuel();
     } else {
       loadBilanAnnuel();
     }
-  }, [currentTab, loadBilanMensuel, loadBilanAnnuel]);
+  }, [admin, currentTab, loadBilanMensuel, loadBilanAnnuel, showError]);
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);

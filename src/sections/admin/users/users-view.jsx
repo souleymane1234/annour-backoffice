@@ -250,6 +250,7 @@ export default function UsersView() {
                     <MenuItem value="POMPISTE">Pompiste</MenuItem>
                     <MenuItem value="STATION">Station</MenuItem>
                     <MenuItem value="ADMIN">Administrateur</MenuItem>
+                    <MenuItem value="GERANT">Gérant</MenuItem>
                     <MenuItem value="SUPERADMIN">Super Admin</MenuItem>
                   </Select>
                 </FormControl>
@@ -475,6 +476,7 @@ export default function UsersView() {
                 <MenuItem value="POMPISTE">Pompiste</MenuItem>
                 <MenuItem value="STATION">Station</MenuItem>
                 <MenuItem value="ADMIN">Administrateur</MenuItem>
+                <MenuItem value="GERANT">Gérant</MenuItem>
               </Select>
             </FormControl>
             <Alert severity="warning">

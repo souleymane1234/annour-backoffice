@@ -13,7 +13,7 @@ const navConfig = [
     path: routesName.admin,
     childrenPath: [routesName.admin],
     icon: icon('ic_analytics'),
-    protected: ['ADMIN', 'COMMERCIAL', 'COMPTABLE'], // Administrateur, Commercial, Comptable
+    protected: ['ADMIN', 'COMMERCIAL', 'COMPTABLE', 'GERANT'], // Administrateur, Commercial, Comptable, Gérant
   },
   {
     title: 'Statistiques',
@@ -23,14 +23,14 @@ const navConfig = [
       routesName.statisticsClients,
     ],
     icon: icon('ic_analytics'),
-    protected: ['ADMIN', 'COMPTABLE'], // Administrateur, Comptable
+    protected: ['ADMIN', 'COMPTABLE', 'GERANT'], // Administrateur, Comptable, Gérant
   },
   {
     title: 'Clients',
     path: routesName.clients,
     childrenPath: [routesName.clients, routesName.clientDetails, routesName.unassignedClients],
     icon: icon('ic_user'),
-    protected: ['ADMIN', 'COMMERCIAL'], // Administrateur, Commercial
+    protected: ['ADMIN', 'COMMERCIAL', 'GERANT'], // Administrateur, Commercial, Gérant
   },
   {
     title: 'Facturation',
@@ -47,7 +47,7 @@ const navConfig = [
       routesName.bilanAnnuel,
     ],
     icon: icon('ic_blog'),
-    protected: ['ADMIN', 'COMPTABLE'], // Administrateur, Comptable
+    protected: ['ADMIN', 'COMPTABLE', 'GERANT'], // Administrateur, Comptable, Gérant
   },
   {
     title: 'Utilisateurs',

@@ -656,6 +656,7 @@ export default class ConsumApi {
       'ADMIN': 'Administrateur',
       'COMPTABLE': 'Comptable',
       'ADMIN_SITE_WEB': 'Administrateur site web',
+      'GERANT': 'Gerant',
     };
     
     const service = roleToService[role] || 'Commercial';

@@ -158,6 +158,7 @@ export default function CommercialCreateView() {
                 <MenuItem value="ADMIN">Administrateur (accès à tout)</MenuItem>
                 <MenuItem value="COMMERCIAL">Commercial (clients et analytiques clients)</MenuItem>
                 <MenuItem value="COMPTABLE">Comptable (facturation et analytiques)</MenuItem>
+                <MenuItem value="GERANT">Gérant (accès restreint)</MenuItem>
                 <MenuItem value="ADMIN_SITE_WEB">Administrateur site web (administration site uniquement)</MenuItem>
               </Select>
             </FormControl>

@@ -105,8 +105,10 @@ export default function UnassignedClientsView() {
               service === 'commerciale' ||
               service.includes('commercial') ||
               service.includes('admin') ||
+              service.includes('gerant') ||
               role.startsWith('ADMIN') ||
-              role === 'SUPERADMIN'
+              role === 'SUPERADMIN' ||
+              role === 'GERANT'
             );
           })
           .map((commercial) => {

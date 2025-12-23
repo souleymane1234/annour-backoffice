@@ -11,6 +11,7 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import { useNotification } from 'src/hooks/useNotification';
+import { useAdminStore } from 'src/store/useAdminStore';
 
 import { fNumber } from 'src/utils/format-number';
 
@@ -68,10 +69,18 @@ BarChart.propTypes = {
 
 export default function StatisticsGlobalView() {
   const { contextHolder, showError } = useNotification();
+  const { admin } = useAdminStore();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
   const loadStatistics = useCallback(async () => {
+    const role = (admin?.role || '').toUpperCase();
+    if (role === 'GERANT') {
+      setLoading(false);
+      showError('Accès refusé', 'Les statistiques globales ne sont pas accessibles pour le rôle gérant.');
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await ConsumApi.getGlobalStatistics();

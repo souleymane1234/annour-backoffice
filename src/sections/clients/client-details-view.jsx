@@ -254,8 +254,10 @@ export default function ClientDetailsView() {
               service === 'commerciale' ||
               service.includes('commercial') ||
               service.includes('admin') ||
+              service.includes('gerant') ||
               role.startsWith('ADMIN') ||
-              role === 'SUPERADMIN'
+              role === 'SUPERADMIN' ||
+              role === 'GERANT'
             );
           })
           .map((commercial) => {
@@ -560,7 +562,13 @@ export default function ClientDetailsView() {
   const canDeleteClient = () => {
     const role = (admin?.role || '').toUpperCase();
     const service = (admin?.service || '').toLowerCase();
-    return role === 'SUPERADMIN' || role === 'ADMIN' || service.includes('admin');
+    return (
+      role === 'SUPERADMIN' ||
+      role === 'ADMIN' ||
+      role === 'GERANT' ||
+      service.includes('admin') ||
+      service.includes('gerant')
+    );
   };
 
   const handleDeleteClient = async () => {
