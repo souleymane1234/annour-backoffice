@@ -325,6 +325,16 @@ export default function ClientsView() {
       });
 
       if (processed.success) {
+        // Si c'est un commercial qui crée le client, l'assigner automatiquement à lui-même
+        if (isCommercial && admin?.id && result.data?.id) {
+          try {
+            await ConsumApi.assignClient(result.data.id, admin.id);
+          } catch (assignError) {
+            console.error('Error assigning client to commercial:', assignError);
+            // Ne pas bloquer si l'assignation échoue, le client est quand même créé
+          }
+        }
+        
         showSuccess('Succès', result.data?.isExisting ? 'Client existant trouvé' : 'Client créé avec succès');
         closeCreateDialog();
         loadClients();
@@ -467,8 +477,8 @@ export default function ClientsView() {
       <Container maxWidth="xl">
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4">Clients</Typography>
-          {!isCommercial && (
-            <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2}>
+            {!isCommercial && (
               <Button
                 variant="outlined"
                 startIcon={<Iconify icon="eva:person-add-fill" />}
@@ -476,16 +486,16 @@ export default function ClientsView() {
               >
                 Clients non assignés
               </Button>
-              <Button
-                variant="contained"
-                color="inherit"
-                startIcon={<Iconify icon="mingcute:add-line" />}
-                onClick={openCreateDialog}
-              >
-                Nouveau Client
-              </Button>
-            </Stack>
-          )}
+            )}
+            <Button
+              variant="contained"
+              color="inherit"
+              startIcon={<Iconify icon="mingcute:add-line" />}
+              onClick={openCreateDialog}
+            >
+              Nouveau Client
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Onglets pour les commerciaux */}
@@ -729,8 +739,7 @@ export default function ClientsView() {
         )}
 
         {/* Dialog de création */}
-        {!isCommercial && (
-          <Dialog open={createDialog.open} onClose={closeCreateDialog} maxWidth="sm" fullWidth>
+        <Dialog open={createDialog.open} onClose={closeCreateDialog} maxWidth="sm" fullWidth>
             <DialogTitle>Nouveau Client</DialogTitle>
             <DialogContent>
               <Stack spacing={3} sx={{ mt: 1 }}>
@@ -845,7 +854,6 @@ export default function ClientsView() {
               </LoadingButton>
             </DialogActions>
           </Dialog>
-        )}
       </Container>
     </>
   );
