@@ -61,6 +61,28 @@ export default function BilanFinancierView() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
+  // Vérifier les permissions pour GERANT au début du composant
+  const role = (admin?.role || '').toUpperCase();
+  if (role === 'GERANT') {
+    return (
+      <Container maxWidth="xl">
+        {contextHolder}
+        <Helmet>
+          <title>Bilan Financier | Annour Travel</title>
+        </Helmet>
+        <Box sx={{ py: 5, textAlign: 'center' }}>
+          <Iconify icon="solar:lock-bold" width={64} sx={{ color: 'text.disabled', mb: 2 }} />
+          <Typography variant="h5" color="text.secondary">
+            Accès refusé
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+            Vous n&apos;avez pas les permissions nécessaires pour accéder au bilan financier.
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
   const loadBilanMensuel = useCallback(async () => {
     setLoading(true);
     try {
@@ -96,19 +118,12 @@ export default function BilanFinancierView() {
   }, [selectedYearAnnuel]);
 
   useEffect(() => {
-    const role = (admin?.role || '').toUpperCase();
-    if (role === 'GERANT') {
-      setLoading(false);
-      showError('Accès refusé', 'Le bilan financier est réservé aux profils autorisés.');
-      return;
-    }
-
     if (currentTab === 'mensuel') {
       loadBilanMensuel();
     } else {
       loadBilanAnnuel();
     }
-  }, [admin, currentTab, loadBilanMensuel, loadBilanAnnuel, showError]);
+  }, [currentTab, loadBilanMensuel, loadBilanAnnuel]);
 
   const handleTabChange = (event, newValue) => {
     setCurrentTab(newValue);
