@@ -677,15 +677,20 @@ export default class ConsumApi {
   // ========== FACTURATION ==========
 
   // Créer une nouvelle facture
-  static async createFacture({ clientId, sessionId, montantTotal, dateEcheance, clientAddress, items }) {
-    return this._authenticatedRequest('POST', apiUrl.factures, {
+  static async createFacture({ type, clientId, sessionId, montantTotal, dateFacture, dateEcheance, clientAddress, items }) {
+    const payload = {
+      type: type || 'facture',
       clientId,
-      sessionId,
       montantTotal,
-      dateEcheance,
-      clientAddress,
-      items
-    });
+    };
+
+    if (dateFacture) payload.dateFacture = dateFacture;
+    if (dateEcheance) payload.dateEcheance = dateEcheance;
+    if (sessionId) payload.sessionId = sessionId;
+    if (clientAddress) payload.clientAddress = clientAddress;
+    if (items) payload.items = items;
+
+    return this._authenticatedRequest('POST', apiUrl.factures, payload);
   }
 
   // Obtenir toutes les factures
@@ -870,16 +875,20 @@ export default class ConsumApi {
 
   // Créer une nouvelle facture proforma
   // Utilise le même endpoint que les factures normales mais avec type: "proforma"
-  static async createFactureProforma({ clientId, sessionId, montantTotal, dateEcheance, clientAddress, items }) {
-    return this._authenticatedRequest('POST', apiUrl.factures, {
+  static async createFactureProforma({ type, clientId, sessionId, montantTotal, dateFacture, dateEcheance, clientAddress, items }) {
+    const payload = {
+      type: type || 'proforma',
       clientId,
-      sessionId,
       montantTotal,
-      dateEcheance,
-      clientAddress,
-      items,
-      type: 'proforma', // Marque comme facture proforma
-    });
+    };
+
+    if (dateFacture) payload.dateFacture = dateFacture;
+    if (dateEcheance) payload.dateEcheance = dateEcheance;
+    if (sessionId) payload.sessionId = sessionId;
+    if (clientAddress) payload.clientAddress = clientAddress;
+    if (items) payload.items = items;
+
+    return this._authenticatedRequest('POST', apiUrl.factures, payload);
   }
 
   // Obtenir toutes les factures proforma

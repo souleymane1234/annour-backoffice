@@ -156,6 +156,7 @@ export default function FacturesView() {
         clientId: '',
         sessionId: '',
         montantTotal: '',
+        dateFacture: '',
         dateEcheance: '',
         clientAddress: '',
         items: [{ description: '', quantity: 1, unitPrice: '' }],
@@ -171,6 +172,7 @@ export default function FacturesView() {
         clientId: '',
         sessionId: '',
         montantTotal: '',
+        dateFacture: '',
         dateEcheance: '',
         clientAddress: '',
         items: [{ description: '', quantity: 1, unitPrice: '' }],
@@ -187,9 +189,23 @@ export default function FacturesView() {
     setCreateDialog({ ...createDialog, loading: true });
   
     try {
+      // Formater la date au format ISO avec timezone si elle est fournie
+      const formatDateToISO = (dateString) => {
+        if (!dateString) return undefined;
+        // Si la date est déjà au format ISO, la retourner telle quelle
+        if (dateString.includes('T')) return dateString;
+        // Sinon, convertir YYYY-MM-DD en ISO avec timezone
+        return `${dateString}T00:00:00Z`;
+      };
+
       const formData = {
-        ...createDialog.formData,
+        type: 'facture',
+        clientId: createDialog.formData.clientId,
         montantTotal: parseFloat(createDialog.formData.montantTotal),
+        dateFacture: formatDateToISO(createDialog.formData.dateFacture),
+        dateEcheance: formatDateToISO(createDialog.formData.dateEcheance),
+        sessionId: createDialog.formData.sessionId || undefined,
+        clientAddress: createDialog.formData.clientAddress || undefined,
         items: createDialog.formData.items.map((item) => ({
           ...item,
           quantity: parseInt(item.quantity, 10),
@@ -487,6 +503,19 @@ export default function FacturesView() {
                     formData: { ...createDialog.formData, montantTotal: e.target.value },
                   })
                 }
+              />
+              <TextField
+                label="Date Facture"
+                fullWidth
+                type="date"
+                value={createDialog.formData.dateFacture}
+                onChange={(e) =>
+                  setCreateDialog({
+                    ...createDialog,
+                    formData: { ...createDialog.formData, dateFacture: e.target.value },
+                  })
+                }
+                InputLabelProps={{ shrink: true }}
               />
               <TextField
                 label="Date d'échéance"

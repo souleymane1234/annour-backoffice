@@ -39,6 +39,7 @@ export default function CreateFactureProformaView() {
     clientId: '',
     sessionId: '',
     montantTotal: '',
+    dateFacture: '',
     dateEcheance: '',
     clientAddress: '',
     items: [{ description: '', quantity: 1, unitPrice: '' }],
@@ -124,9 +125,23 @@ export default function CreateFactureProformaView() {
 
     setLoading(true);
     try {
+      // Formater la date au format ISO avec timezone si elle est fournie
+      const formatDateToISO = (dateString) => {
+        if (!dateString) return undefined;
+        // Si la date est déjà au format ISO, la retourner telle quelle
+        if (dateString.includes('T')) return dateString;
+        // Sinon, convertir YYYY-MM-DD en ISO avec timezone
+        return `${dateString}T00:00:00Z`;
+      };
+
       const submitData = {
-        ...formData,
+        type: 'proforma',
+        clientId: formData.clientId,
         montantTotal: parseFloat(formData.montantTotal) || 0,
+        dateFacture: formatDateToISO(formData.dateFacture),
+        dateEcheance: formatDateToISO(formData.dateEcheance),
+        sessionId: formData.sessionId || undefined,
+        clientAddress: formData.clientAddress || undefined,
         items: formData.items.map((item) => ({
           ...item,
           quantity: parseInt(item.quantity, 10),
@@ -226,6 +241,15 @@ export default function CreateFactureProformaView() {
               value={formData.sessionId}
               onChange={(e) => handleChange('sessionId', e.target.value)}
               helperText="ID de la session client si applicable"
+            />
+
+            <TextField
+              label="Date Facture"
+              fullWidth
+              type="date"
+              value={formData.dateFacture}
+              onChange={(e) => handleChange('dateFacture', e.target.value)}
+              InputLabelProps={{ shrink: true }}
             />
 
             <TextField
