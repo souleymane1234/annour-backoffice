@@ -708,6 +708,11 @@ export default class ConsumApi {
     return this._authenticatedRequest('GET', apiUrl.clientFactures(clientId));
   }
 
+  // Convertir une facture proforma en facture définitive
+  static async convertProformaToFacture(id) {
+    return this._authenticatedRequest('PATCH', apiUrl.factureConvertToFacture(id));
+  }
+
   // Enregistrer un paiement
   static async createPaiement({ factureId, montant, method, reference }) {
     return this._authenticatedRequest('POST', apiUrl.paiements, {

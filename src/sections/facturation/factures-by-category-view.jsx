@@ -1,12 +1,15 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect, useCallback } from 'react';
 
+import { LoadingButton } from '@mui/lab';
 import {
+  Box,
   Card,
   Chip,
   Table,
   Stack,
   Button,
+  Dialog,
   Select,
   MenuItem,
   TableRow,
@@ -18,6 +21,9 @@ import {
   IconButton,
   InputLabel,
   FormControl,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   TableContainer,
   TablePagination,
 } from '@mui/material';
@@ -65,7 +71,7 @@ const getCreatorName = (facture) => {
 
 export default function FacturesByCategoryView() {
   const router = useRouter();
-  const { contextHolder, showError } = useNotification();
+  const { contextHolder, showError, showSuccess, showApiResponse } = useNotification();
 
   const [facturesProforma, setFacturesProforma] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +79,31 @@ export default function FacturesByCategoryView() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [clientFilter, setClientFilter] = useState('');
   const [clients, setClients] = useState([]);
+  const [convertingId, setConvertingId] = useState(null);
+  const [convertDialog, setConvertDialog] = useState({
+    open: false,
+    factureId: null,
+    facture: null,
+    loading: false,
+  });
+
+  const openConvertDialog = (factureId, facture) => {
+    setConvertDialog({
+      open: true,
+      factureId,
+      facture,
+      loading: false,
+    });
+  };
+
+  const closeConvertDialog = () => {
+    setConvertDialog({
+      open: false,
+      factureId: null,
+      facture: null,
+      loading: false,
+    });
+  };
 
   const loadFactures = useCallback(async () => {
     setLoading(true);
@@ -148,6 +179,33 @@ export default function FacturesByCategoryView() {
   };
 
   const stats = getStats();
+
+  const handleConvertProformaToFacture = async () => {
+    if (!convertDialog.factureId) {
+      return;
+    }
+
+    setConvertDialog({ ...convertDialog, loading: true });
+    try {
+      const result = await ConsumApi.convertProformaToFacture(convertDialog.factureId);
+      const processed = showApiResponse(result, {
+        successTitle: 'Facture convertie',
+        errorTitle: 'Erreur de conversion',
+      });
+
+      if (processed && processed.success) {
+        showSuccess('Succès', 'Facture proforma convertie en facture définitive avec succès');
+        closeConvertDialog();
+        loadFactures(); // Recharger la liste des factures
+      } else {
+        setConvertDialog({ ...convertDialog, loading: false });
+      }
+    } catch (error) {
+      console.error('Error converting proforma to facture:', error);
+      showError('Erreur', 'Impossible de convertir la facture proforma');
+      setConvertDialog({ ...convertDialog, loading: false });
+    }
+  };
 
   return (
     <>
@@ -284,22 +342,33 @@ export default function FacturesByCategoryView() {
                           <TableCell>{facture.dateFacture ? fDate(facture.dateFacture) : '-'}</TableCell>
                           <TableCell>{facture.dateEcheance ? fDate(facture.dateEcheance) : '-'}</TableCell>
                           <TableCell align="right">
-                            <IconButton
-                              onClick={async () => {
-                                try {
-                                  // Ouvrir le PDF de la facture dans un nouvel onglet
-                                  const result = await ConsumApi.openFacturePdfInNewTab(facture.id);
-                                  if (!result.success) {
-                                    showError('Erreur', result.message || 'Impossible d\'ouvrir le PDF de la facture');
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                              <IconButton
+                                onClick={async () => {
+                                  try {
+                                    // Ouvrir le PDF de la facture dans un nouvel onglet
+                                    const result = await ConsumApi.openFacturePdfInNewTab(facture.id);
+                                    if (!result.success) {
+                                      showError('Erreur', result.message || 'Impossible d\'ouvrir le PDF de la facture');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error opening PDF:', error);
+                                    showError('Erreur', 'Impossible d\'ouvrir le PDF de la facture');
                                   }
-                                } catch (error) {
-                                  console.error('Error opening PDF:', error);
-                                  showError('Erreur', 'Impossible d\'ouvrir le PDF de la facture');
-                                }
-                              }}
-                            >
-                              <Iconify icon="solar:eye-bold" />
-                            </IconButton>
+                                }}
+                                title="Voir le PDF"
+                              >
+                                <Iconify icon="solar:eye-bold" />
+                              </IconButton>
+                              <IconButton
+                                onClick={() => openConvertDialog(facture.id, facture)}
+                                disabled={convertingId === facture.id}
+                                color="success"
+                                title="Convertir en facture définitive"
+                              >
+                                <Iconify icon="solar:check-circle-bold" />
+                              </IconButton>
+                            </Stack>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -318,6 +387,69 @@ export default function FacturesByCategoryView() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Card>
+
+        {/* Dialog de confirmation de conversion */}
+        <Dialog open={convertDialog.open} onClose={closeConvertDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Iconify icon="solar:check-circle-bold" width={24} color="success.main" />
+              <Box>
+                <Typography variant="h6">Convertir en facture définitive</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Confirmer la conversion de la facture proforma
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="body2">
+                Êtes-vous sûr de vouloir convertir cette facture proforma en facture définitive ?
+              </Typography>
+              {convertDialog.facture && (
+                <Card variant="outlined" sx={{ p: 2, bgcolor: 'action.hover' }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="caption" color="text.secondary">Numéro:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {convertDialog.facture.numeroFacture || '-'}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="caption" color="text.secondary">Client:</Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {convertDialog.facture.clientName || convertDialog.facture.client?.nom || '-'}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="caption" color="text.secondary">Montant:</Typography>
+                      <Typography variant="body2" fontWeight="medium" color="primary.main">
+                        {fNumber(convertDialog.facture.montantTotal || 0)} FCFA
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Card>
+              )}
+              <Typography variant="caption" color="text.secondary">
+                Une fois convertie, la facture apparaîtra dans la liste des factures définitive et permettra l&apos;enregistrement de paiements.
+              </Typography>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeConvertDialog} disabled={convertDialog.loading}>
+              Annuler
+            </Button>
+            <LoadingButton
+              variant="contained"
+              color="success"
+              onClick={handleConvertProformaToFacture}
+              loading={convertDialog.loading}
+              startIcon={<Iconify icon="solar:check-circle-bold" />}
+            >
+              Confirmer la conversion
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );

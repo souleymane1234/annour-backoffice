@@ -134,11 +134,11 @@ export default function ClientsView() {
         }
       } else if (viewFilter === 'unassigned') {
         // Pour les non-commerciaux, utiliser les filtres existants
-        result = await ConsumApi.getUnassignedClients();
-      } else if (viewFilter === 'withCommercial') {
-        result = await ConsumApi.getClientsWithCommercial();
-      } else {
-        result = await ConsumApi.getClients();
+          result = await ConsumApi.getUnassignedClients();
+        } else if (viewFilter === 'withCommercial') {
+          result = await ConsumApi.getClientsWithCommercial();
+        } else {
+          result = await ConsumApi.getClients();
       }
 
       if (result.success) {
@@ -477,7 +477,7 @@ export default function ClientsView() {
       <Container maxWidth="xl">
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4">Clients</Typography>
-          <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2}>
             {!isCommercial && (
               <Button
                 variant="outlined"
@@ -487,15 +487,15 @@ export default function ClientsView() {
                 Clients non assignés
               </Button>
             )}
-            <Button
-              variant="contained"
-              color="inherit"
-              startIcon={<Iconify icon="mingcute:add-line" />}
-              onClick={openCreateDialog}
-            >
-              Nouveau Client
-            </Button>
-          </Stack>
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={<Iconify icon="mingcute:add-line" />}
+                onClick={openCreateDialog}
+              >
+                Nouveau Client
+              </Button>
+            </Stack>
         </Stack>
 
         {/* Onglets pour les commerciaux */}
@@ -739,7 +739,7 @@ export default function ClientsView() {
         )}
 
         {/* Dialog de création */}
-        <Dialog open={createDialog.open} onClose={closeCreateDialog} maxWidth="sm" fullWidth>
+          <Dialog open={createDialog.open} onClose={closeCreateDialog} maxWidth="sm" fullWidth>
             <DialogTitle>Nouveau Client</DialogTitle>
             <DialogContent>
               <Stack spacing={3} sx={{ mt: 1 }}>

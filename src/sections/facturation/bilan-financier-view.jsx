@@ -5,15 +5,20 @@ import {
   Box,
   Tab,
   Card,
-  Grid,
   Tabs,
   Stack,
+  Table,
   Select,
   MenuItem,
+  TableRow,
+  TableBody,
+  TableCell,
+  TableHead,
   Container,
   Typography,
   InputLabel,
   FormControl,
+  TableContainer,
 } from '@mui/material';
 
 import { useNotification } from 'src/hooks/useNotification';
@@ -24,6 +29,7 @@ import { fNumber } from 'src/utils/format-number';
 import ConsumApi from 'src/services_workers/consum_api';
 
 import Iconify from 'src/components/iconify';
+import Scrollbar from 'src/components/scrollbar';
 
 // ----------------------------------------------------------------------
 
@@ -43,7 +49,7 @@ const MONTHS = [
 ];
 
 export default function BilanFinancierView() {
-  const { contextHolder, showError } = useNotification();
+  const { contextHolder } = useNotification();
   const { admin } = useAdminStore();
   const [currentTab, setCurrentTab] = useState('mensuel');
   const [loading, setLoading] = useState(false);
@@ -143,166 +149,229 @@ export default function BilanFinancierView() {
     const { revenus, depenses, factures, bilan } = bilanMensuel;
 
     return (
-      <Grid container spacing={3}>
+      <Stack spacing={3}>
         {/* Sélecteurs */}
-        <Grid item xs={12}>
-          <Card sx={{ p: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <FormControl sx={{ minWidth: 200 }}>
-                <InputLabel>Mois</InputLabel>
-                <Select
-                  value={selectedMonth}
-                  label="Mois"
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                >
-                  {MONTHS.map((month) => (
-                    <MenuItem key={month.value} value={month.value}>
-                      {month.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 200 }}>
-                <InputLabel>Année</InputLabel>
-                <Select
-                  value={selectedYear}
-                  label="Année"
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                >
-                  {years.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-          </Card>
-        </Grid>
-
-        {/* Revenus */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h6" color="success.main">
-                Revenus
-              </Typography>
-              <Typography variant="h4">{fNumber(revenus?.total || 0)} FCFA</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {revenus?.nombrePaiements || 0} paiement(s)
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
-
-        {/* Dépenses */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h6" color="error.main">
-                Dépenses
-              </Typography>
-              <Typography variant="h4">{fNumber(depenses?.total || 0)} FCFA</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {depenses?.nombreBons || 0} bon(s) de sortie
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
-
-        {/* Bilan */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h6">Bilan</Typography>
-              <Typography
-                variant="h4"
-                color={bilan?.solde >= 0 ? 'success.main' : 'error.main'}
+        <Card sx={{ p: 2 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Mois</InputLabel>
+              <Select
+                value={selectedMonth}
+                label="Mois"
+                onChange={(e) => setSelectedMonth(e.target.value)}
               >
-                {fNumber(bilan?.solde || 0)} FCFA
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Marge: {bilan?.marge || '0.00'}%
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
+                {MONTHS.map((month) => (
+                  <MenuItem key={month.value} value={month.value}>
+                    {month.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Année</InputLabel>
+              <Select
+                value={selectedYear}
+                label="Année"
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                {years.map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Card>
 
-        {/* Détails Revenus */}
+        {/* Tableau de synthèse */}
+        <Card>
+          <Scrollbar>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><Typography variant="subtitle2" fontWeight="bold">Élément</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Détails</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:money-bag-bold" width={20} color="success.main" />
+                        <Typography variant="body2" fontWeight="medium">Revenus</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="h6" color="success.main">
+                        {fNumber(revenus?.total || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        {revenus?.nombrePaiements || 0} paiement(s)
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:card-bold" width={20} color="error.main" />
+                        <Typography variant="body2" fontWeight="medium">Dépenses</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="h6" color="error.main">
+                        {fNumber(depenses?.total || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        {depenses?.nombreBons || 0} bon(s) de sortie
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:chart-bold" width={20} />
+                        <Typography variant="body2" fontWeight="bold">Bilan (Solde)</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="h5" color={bilan?.solde >= 0 ? 'success.main' : 'error.main'} fontWeight="bold">
+                        {fNumber(bilan?.solde || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        Marge: {bilan?.marge || '0.00'}%
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+        </Card>
+
+        {/* Tableau des revenus par méthode */}
         {revenus?.parMethode && Object.keys(revenus.parMethode).length > 0 && (
-          <Grid item xs={12} md={6}>
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Revenus par méthode de paiement
-              </Typography>
-              <Stack spacing={1}>
-                {Object.entries(revenus.parMethode).map(([methode, montant]) => (
-                  <Box key={methode} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">{methode}</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {fNumber(montant)} FCFA
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Détails Dépenses */}
-        {depenses?.parCategorie && Object.keys(depenses.parCategorie).length > 0 && (
-          <Grid item xs={12} md={6}>
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Dépenses par catégorie
-              </Typography>
-              <Stack spacing={1}>
-                {Object.entries(depenses.parCategorie).map(([categorie, montant]) => (
-                  <Box key={categorie} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">{categorie}</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {fNumber(montant)} FCFA
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Factures */}
-        <Grid item xs={12}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Factures
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body2" color="text.secondary">
-                  Total
-                </Typography>
-                <Typography variant="h6">{fNumber(factures?.total || 0)} FCFA</Typography>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body2" color="text.secondary">
-                  Payées
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  {fNumber(factures?.payees || 0)} FCFA
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body2" color="text.secondary">
-                  En attente
-                </Typography>
-                <Typography variant="h6" color="warning.main">
-                  {fNumber(factures?.enAttente || 0)} FCFA
-                </Typography>
-              </Grid>
-            </Grid>
+          <Card>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="h6">Revenus par méthode de paiement</Typography>
+            </Box>
+            <Scrollbar>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><Typography variant="subtitle2" fontWeight="bold">Méthode de paiement</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(revenus.parMethode).map(([methode, montant]) => (
+                      <TableRow key={methode} hover>
+                        <TableCell>
+                          <Typography variant="body2" textTransform="capitalize">{methode.replace(/_/g, ' ')}</Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight="medium">{fNumber(montant)}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Scrollbar>
           </Card>
-        </Grid>
-      </Grid>
+        )}
+
+        {/* Tableau des dépenses par catégorie */}
+        {depenses?.parCategorie && Object.keys(depenses.parCategorie).length > 0 && (
+          <Card>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="h6">Dépenses par catégorie</Typography>
+            </Box>
+            <Scrollbar>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><Typography variant="subtitle2" fontWeight="bold">Catégorie</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(depenses.parCategorie).map(([categorie, montant]) => (
+                      <TableRow key={categorie} hover>
+                        <TableCell>
+                          <Typography variant="body2" textTransform="capitalize">{categorie.replace(/_/g, ' ')}</Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight="medium" color="error.main">{fNumber(montant)}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Scrollbar>
+          </Card>
+        )}
+
+        {/* Tableau des factures */}
+        <Card>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">Résumé des factures</Typography>
+          </Box>
+          <Scrollbar>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><Typography variant="subtitle2" fontWeight="bold">Type</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow hover>
+                    <TableCell>
+                      <Typography variant="body2">Total facturé</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight="medium">{fNumber(factures?.total || 0)}</Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell>
+                      <Typography variant="body2" color="success.main">Factures payées</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight="medium" color="success.main">
+                        {fNumber(factures?.payees || 0)}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell>
+                      <Typography variant="body2" color="warning.main">Factures en attente</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight="medium" color="warning.main">
+                        {fNumber(factures?.enAttente || 0)}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+        </Card>
+      </Stack>
     );
   };
 
@@ -320,189 +389,276 @@ export default function BilanFinancierView() {
     const { revenus, depenses, factures, bilan } = bilanAnnuel;
 
     return (
-      <Grid container spacing={3}>
+      <Stack spacing={3}>
         {/* Sélecteur */}
-        <Grid item xs={12}>
-          <Card sx={{ p: 2 }}>
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Année</InputLabel>
-              <Select
-                value={selectedYearAnnuel}
-                label="Année"
-                onChange={(e) => setSelectedYearAnnuel(e.target.value)}
-              >
-                {years.map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Card>
-        </Grid>
+        <Card sx={{ p: 2 }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Année</InputLabel>
+            <Select
+              value={selectedYearAnnuel}
+              label="Année"
+              onChange={(e) => setSelectedYearAnnuel(e.target.value)}
+            >
+              {years.map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Card>
 
-        {/* Résumé */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h6" color="success.main">
-                Revenus Totaux
-              </Typography>
-              <Typography variant="h4">{fNumber(revenus?.total || 0)} FCFA</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {revenus?.nombrePaiements || 0} paiement(s)
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
+        {/* Tableau de synthèse */}
+        <Card>
+          <Scrollbar>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><Typography variant="subtitle2" fontWeight="bold">Élément</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Détails</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:money-bag-bold" width={20} color="success.main" />
+                        <Typography variant="body2" fontWeight="medium">Revenus Totaux</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="h6" color="success.main">
+                        {fNumber(revenus?.total || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        {revenus?.nombrePaiements || 0} paiement(s)
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:card-bold" width={20} color="error.main" />
+                        <Typography variant="body2" fontWeight="medium">Dépenses Totales</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="h6" color="error.main">
+                        {fNumber(depenses?.total || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        {depenses?.nombreBons || 0} bon(s) de sortie
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:chart-bold" width={20} />
+                        <Typography variant="body2" fontWeight="bold">Bilan Annuel (Solde)</Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="h5" color={bilan?.solde >= 0 ? 'success.main' : 'error.main'} fontWeight="bold">
+                        {fNumber(bilan?.solde || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        Marge: {bilan?.marge || '0.00'}%
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+        </Card>
 
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h6" color="error.main">
-                Dépenses Totales
-              </Typography>
-              <Typography variant="h4">{fNumber(depenses?.total || 0)} FCFA</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {depenses?.nombreBons || 0} bon(s) de sortie
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ p: 3 }}>
-            <Stack spacing={2}>
-              <Typography variant="h6">Bilan Annuel</Typography>
-              <Typography
-                variant="h4"
-                color={bilan?.solde >= 0 ? 'success.main' : 'error.main'}
-              >
-                {fNumber(bilan?.solde || 0)} FCFA
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Marge: {bilan?.marge || '0.00'}%
-              </Typography>
-            </Stack>
-          </Card>
-        </Grid>
-
-        {/* Revenus par mois */}
+        {/* Tableau des revenus par mois */}
         {revenus?.parMois && revenus.parMois.length > 0 && (
-          <Grid item xs={12}>
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Revenus par mois
-              </Typography>
-              <Grid container spacing={2}>
-                {revenus.parMois.map((mois) => (
-                  <Grid item xs={6} sm={4} md={2} key={mois.mois}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'background.neutral', borderRadius: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {MONTHS.find((m) => m.value === mois.mois)?.label || `Mois ${mois.mois}`}
-                      </Typography>
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        {fNumber(mois.montant)} FCFA
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {mois.nombre} paiement(s)
-                      </Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Dépenses par mois */}
-        {depenses?.parMois && depenses.parMois.length > 0 && (
-          <Grid item xs={12}>
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Dépenses par mois
-              </Typography>
-              <Grid container spacing={2}>
-                {depenses.parMois.map((mois) => (
-                  <Grid item xs={6} sm={4} md={2} key={mois.mois}>
-                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'background.neutral', borderRadius: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {MONTHS.find((m) => m.value === mois.mois)?.label || `Mois ${mois.mois}`}
-                      </Typography>
-                      <Typography variant="subtitle2" fontWeight="bold" color="error.main">
-                        {fNumber(mois.montant)} FCFA
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {mois.nombre} bon(s)
-                      </Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Détails par catégorie */}
-        {depenses?.parCategorie && Object.keys(depenses.parCategorie).length > 0 && (
-          <Grid item xs={12} md={6}>
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Dépenses par catégorie
-              </Typography>
-              <Stack spacing={1}>
-                {Object.entries(depenses.parCategorie).map(([categorie, montant]) => (
-                  <Box key={categorie} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">{categorie}</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {fNumber(montant)} FCFA
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Factures */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Factures
-            </Typography>
-            <Stack spacing={2}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Total
-                </Typography>
-                <Typography variant="h6">{fNumber(factures?.total || 0)} FCFA</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Payées
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  {fNumber(factures?.payees || 0)} FCFA
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  En attente
-                </Typography>
-                <Typography variant="h6" color="warning.main">
-                  {fNumber(factures?.enAttente || 0)} FCFA
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  Nombre
-                </Typography>
-                <Typography variant="h6">{factures?.nombre || 0}</Typography>
-              </Box>
-            </Stack>
+          <Card>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="h6">Revenus par mois</Typography>
+            </Box>
+            <Scrollbar>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><Typography variant="subtitle2" fontWeight="bold">Mois</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Nombre de paiements</Typography></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {revenus.parMois.map((mois) => (
+                      <TableRow key={mois.mois} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {MONTHS.find((m) => m.value === mois.mois)?.label || `Mois ${mois.mois}`}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight="medium" color="success.main">
+                            {fNumber(mois.montant)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" color="text.secondary">
+                            {mois.nombre || 0}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Scrollbar>
           </Card>
-        </Grid>
-      </Grid>
+        )}
+
+        {/* Tableau des dépenses par mois */}
+        {depenses?.parMois && depenses.parMois.length > 0 && (
+          <Card>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="h6">Dépenses par mois</Typography>
+            </Box>
+            <Scrollbar>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><Typography variant="subtitle2" fontWeight="bold">Mois</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Nombre de bons</Typography></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {depenses.parMois.map((mois) => (
+                      <TableRow key={mois.mois} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {MONTHS.find((m) => m.value === mois.mois)?.label || `Mois ${mois.mois}`}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight="medium" color="error.main">
+                            {fNumber(mois.montant)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" color="text.secondary">
+                            {mois.nombre || 0}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Scrollbar>
+          </Card>
+        )}
+
+        {/* Tableau des dépenses par catégorie */}
+        {depenses?.parCategorie && Object.keys(depenses.parCategorie).length > 0 && (
+          <Card>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="h6">Dépenses par catégorie</Typography>
+            </Box>
+            <Scrollbar>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><Typography variant="subtitle2" fontWeight="bold">Catégorie</Typography></TableCell>
+                      <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(depenses.parCategorie).map(([categorie, montant]) => (
+                      <TableRow key={categorie} hover>
+                        <TableCell>
+                          <Typography variant="body2" textTransform="capitalize">{categorie.replace(/_/g, ' ')}</Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight="medium" color="error.main">{fNumber(montant)}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Scrollbar>
+          </Card>
+        )}
+
+        {/* Tableau des factures */}
+        <Card>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">Résumé des factures</Typography>
+          </Box>
+          <Scrollbar>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><Typography variant="subtitle2" fontWeight="bold">Type</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Montant (FCFA)</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="bold">Nombre</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow hover>
+                    <TableCell>
+                      <Typography variant="body2">Total facturé</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight="medium">{fNumber(factures?.total || 0)}</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">{factures?.nombre || 0}</Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell>
+                      <Typography variant="body2" color="success.main">Factures payées</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight="medium" color="success.main">
+                        {fNumber(factures?.payees || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
+                    <TableCell>
+                      <Typography variant="body2" color="warning.main">Factures en attente</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight="medium" color="warning.main">
+                        {fNumber(factures?.enAttente || 0)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+        </Card>
+      </Stack>
     );
   };
 

@@ -50,6 +50,7 @@ export const apiUrl = {
   facturePaiements: (id) => `${base_url}/facturation/factures/${id}/paiements`,
   facturePdf: (id) => `${base_url}/facturation/factures/${id}/pdf`,
   factureGeneratePdf: (id) => `${base_url}/facturation/factures/${id}/generate-pdf`,
+  factureConvertToFacture: (id) => `${base_url}/facturation/factures/${id}/convert-to-facture`,
   paiements: `${base_url}/facturation/paiements`,
   
   // Finance - Bons de sortie

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 
@@ -39,9 +40,9 @@ import {
 } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
-import { useAdminStore } from 'src/store/useAdminStore';
 
 import { useNotification } from 'src/hooks/useNotification';
+import { useAdminStore } from 'src/store/useAdminStore';
 
 import { fDate } from 'src/utils/format-time';
 import { fNumber } from 'src/utils/format-number';
@@ -187,6 +188,11 @@ export default function ClientDetailsView() {
     dateEcheance: '',
     clientAddress: '',
   });
+
+  // Facturation client (factures et paiements)
+  const [clientFactures, setClientFactures] = useState([]);
+  const [clientPaiements, setClientPaiements] = useState([]);
+  const [loadingFacturation, setLoadingFacturation] = useState(false);
 
   // Documents
   const [documents, setDocuments] = useState([]);
@@ -361,6 +367,59 @@ export default function ClientDetailsView() {
       loadDocuments();
     }
   }, [currentTab, clientId]);
+
+  // Charger les données de facturation quand on passe à l'onglet Facturation
+  const loadFacturationData = useCallback(async () => {
+    if (!clientId) return;
+    
+    setLoadingFacturation(true);
+    try {
+      // Charger toutes les factures du client
+      const facturesResult = await ConsumApi.getClientFactures(clientId);
+      
+      if (facturesResult.success && Array.isArray(facturesResult.data)) {
+        const factures = facturesResult.data;
+        setClientFactures(factures);
+
+        // Extraire tous les paiements de toutes les factures
+        const allPaiements = [];
+        factures.forEach((facture) => {
+          if (facture.paiements && Array.isArray(facture.paiements)) {
+            facture.paiements.forEach((paiement) => {
+              allPaiements.push({
+                ...paiement,
+                factureId: facture.id,
+                factureNumero: facture.numeroFacture,
+                factureMontantTotal: facture.montantTotal,
+              });
+            });
+          }
+        });
+        // Trier par date décroissante (plus récent en premier)
+        allPaiements.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0);
+          const dateB = new Date(b.createdAt || 0);
+          return dateB - dateA;
+        });
+        setClientPaiements(allPaiements);
+      } else {
+        setClientFactures([]);
+        setClientPaiements([]);
+      }
+    } catch (error) {
+      console.error('Error loading facturation data:', error);
+      setClientFactures([]);
+      setClientPaiements([]);
+    } finally {
+      setLoadingFacturation(false);
+    }
+  }, [clientId]);
+
+  useEffect(() => {
+    if (currentTab === 'facturation' && clientId) {
+      loadFacturationData();
+    }
+  }, [currentTab, clientId, loadFacturationData]);
 
   const loadDocuments = async () => {
     if (!clientId) return;
@@ -1026,6 +1085,12 @@ export default function ClientDetailsView() {
               icon={<Iconify icon="solar:folder-with-files-bold" />}
               iconPosition="start"
             />
+            <Tab
+              label="Facturation"
+              value="facturation"
+              icon={<Iconify icon="solar:bill-list-bold" />}
+              iconPosition="start"
+            />
           </Tabs>
         </Card>
 
@@ -1688,6 +1753,264 @@ export default function ClientDetailsView() {
           </Card>
         )}
 
+        {currentTab === 'facturation' && (
+          <Stack spacing={3}>
+            {/* Historique des paiements */}
+            <Card>
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Typography variant="h6">Historique des paiements</Typography>
+              </Box>
+              {(() => {
+                if (loadingFacturation) {
+                  return (
+                    <Box sx={{ py: 5 }}>
+                      <LinearProgress />
+                      <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+                        Chargement...
+                      </Typography>
+                    </Box>
+                  );
+                }
+                if (clientPaiements.length === 0) {
+                  return (
+                    <Box sx={{ p: 3 }}>
+                      <Alert severity="info">
+                        <Typography variant="body2">Aucun paiement enregistré pour ce client.</Typography>
+                      </Alert>
+                    </Box>
+                  );
+                }
+                return (
+                <Scrollbar>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Date</TableCell>
+                          <TableCell>Facture</TableCell>
+                          <TableCell>Méthode</TableCell>
+                          <TableCell align="right">Montant (FCFA)</TableCell>
+                          <TableCell>Statut</TableCell>
+                          <TableCell>Référence</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {clientPaiements.map((paiement) => (
+                          <TableRow key={paiement.id} hover>
+                            <TableCell>{paiement.createdAt ? fDate(paiement.createdAt) : '-'}</TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ cursor: 'pointer', color: 'primary.main' }} onClick={() => router.push(`/facturation/factures/${paiement.factureId}`)}>
+                                {paiement.factureNumero || '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" textTransform="capitalize">
+                                {paiement.method?.replace(/_/g, ' ') || '-'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight="medium" color="success.main">
+                                {fNumber(paiement.montant || 0)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={paiement.status === 'completed' ? 'Complété' : paiement.status || '-'}
+                                color={paiement.status === 'completed' ? 'success' : 'default'}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {paiement.reference || '-'}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Scrollbar>
+                );
+              })()}
+            </Card>
+
+            {/* Factures en attente */}
+            <Card>
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Typography variant="h6">Factures en attente</Typography>
+              </Box>
+              {loadingFacturation ? (
+                <Box sx={{ py: 5 }}>
+                  <LinearProgress />
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+                    Chargement...
+                  </Typography>
+                </Box>
+              ) : (
+                (() => {
+                  const facturesEnAttente = clientFactures.filter(
+                    (f) => f.type !== 'proforma' && (f.status === 'pending' || (f.montantRestant && f.montantRestant > 0))
+                  );
+                  return facturesEnAttente.length === 0 ? (
+                    <Box sx={{ p: 3 }}>
+                      <Alert severity="success">
+                        <Typography variant="body2">Aucune facture en attente.</Typography>
+                      </Alert>
+                    </Box>
+                  ) : (
+                    <Scrollbar>
+                      <TableContainer>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Numéro</TableCell>
+                              <TableCell>Date Facture</TableCell>
+                              <TableCell>Date Échéance</TableCell>
+                              <TableCell align="right">Total (FCFA)</TableCell>
+                              <TableCell align="right">Payé (FCFA)</TableCell>
+                              <TableCell align="right">Restant (FCFA)</TableCell>
+                              <TableCell>Statut</TableCell>
+                              <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {facturesEnAttente.map((facture) => (
+                              <TableRow key={facture.id} hover>
+                                <TableCell>
+                                  <Typography variant="subtitle2">{facture.numeroFacture || '-'}</Typography>
+                                </TableCell>
+                                <TableCell>{facture.dateFacture ? fDate(facture.dateFacture) : '-'}</TableCell>
+                                <TableCell>{facture.dateEcheance ? fDate(facture.dateEcheance) : '-'}</TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2">{fNumber(facture.montantTotal || 0)}</Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" color="success.main">
+                                    {fNumber(facture.montantPaye || 0)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight="medium" color="warning.main">
+                                    {fNumber(facture.montantRestant || 0)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={(() => {
+                                      if (facture.status === 'pending') return 'En attente';
+                                      if (facture.status === 'partial') return 'Partiel';
+                                      if (facture.status === 'paid') return 'Payé';
+                                      return facture.status || '-';
+                                    })()}
+                                    color={FACTURE_STATUS_COLORS[facture.status] || 'default'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell align="right">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => router.push(`/facturation/factures/${facture.id}`)}
+                                    title="Voir les détails"
+                                  >
+                                    <Iconify icon="solar:eye-bold" />
+                                  </IconButton>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Scrollbar>
+                  );
+                })()
+              )}
+            </Card>
+
+            {/* Factures proforma */}
+            <Card>
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                <Typography variant="h6">Factures Proforma</Typography>
+              </Box>
+              {loadingFacturation ? (
+                <Box sx={{ py: 5 }}>
+                  <LinearProgress />
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+                    Chargement...
+                  </Typography>
+                </Box>
+              ) : (
+                (() => {
+                  const facturesProforma = clientFactures.filter(
+                    (f) => f.type === 'proforma' || (f.numeroFacture && f.numeroFacture.startsWith('PRO-'))
+                  );
+                  return facturesProforma.length === 0 ? (
+                    <Box sx={{ p: 3 }}>
+                      <Alert severity="info">
+                        <Typography variant="body2">Aucune facture proforma pour ce client.</Typography>
+                      </Alert>
+                    </Box>
+                  ) : (
+                    <Scrollbar>
+                      <TableContainer>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Numéro</TableCell>
+                              <TableCell>Date Facture</TableCell>
+                              <TableCell>Date Échéance</TableCell>
+                              <TableCell align="right">Montant (FCFA)</TableCell>
+                              <TableCell>Statut</TableCell>
+                              <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {facturesProforma.map((facture) => (
+                              <TableRow key={facture.id} hover>
+                                <TableCell>
+                                  <Stack direction="row" spacing={1} alignItems="center">
+                                    <Typography variant="subtitle2">{facture.numeroFacture || '-'}</Typography>
+                                    <Chip label="Proforma" size="small" color="warning" />
+                                  </Stack>
+                                </TableCell>
+                                <TableCell>{facture.dateFacture ? fDate(facture.dateFacture) : '-'}</TableCell>
+                                <TableCell>{facture.dateEcheance ? fDate(facture.dateEcheance) : '-'}</TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {fNumber(facture.montantTotal || 0)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={facture.status === 'pending' ? 'En attente' : facture.status || '-'}
+                                    color={FACTURE_STATUS_COLORS[facture.status] || 'default'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => router.push(`/facturation/factures/${facture.id}`)}
+                                      title="Voir les détails"
+                                    >
+                                      <Iconify icon="solar:eye-bold" />
+                                    </IconButton>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Scrollbar>
+                  );
+                })()
+              )}
+            </Card>
+          </Stack>
+        )}
+
         {/* Dialog ouvrir session */}
         <Dialog
           open={openSessionDialog.open}
@@ -1885,14 +2208,14 @@ export default function ClientDetailsView() {
 
                 if (!loadingCommerciaux && commerciaux.length === 0) {
                   return (
-                    <Alert severity="warning">
-                      <Typography variant="body2" gutterBottom>
-                        Aucun commercial disponible dans la liste.
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                <Alert severity="warning">
+                  <Typography variant="body2" gutterBottom>
+                    Aucun commercial disponible dans la liste.
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
                         Vous pouvez entrer l&apos;ID du commercial manuellement ci-dessous.
-                      </Typography>
-                    </Alert>
+                  </Typography>
+                </Alert>
                   );
                 }
 
@@ -1911,57 +2234,57 @@ export default function ClientDetailsView() {
 
                 if (!loadingCommerciaux && availableCommerciaux.length > 0) {
                   return (
-                    <FormControl fullWidth>
-                      <InputLabel>Commercial *</InputLabel>
-                      <Select
-                        value={assignDialog.userId}
-                        label="Commercial *"
-                        onChange={(e) => setAssignDialog({ ...assignDialog, userId: e.target.value })}
-                        renderValue={(selected) => {
-                          if (!selected) return '';
-                          // Chercher dans la liste des commerciaux chargés
-                          const selectedCommercial = commerciaux.find((c) => c.id === selected);
-                          if (selectedCommercial?.name) {
-                            return selectedCommercial.name;
+                <FormControl fullWidth>
+                  <InputLabel>Commercial *</InputLabel>
+                  <Select
+                    value={assignDialog.userId}
+                    label="Commercial *"
+                    onChange={(e) => setAssignDialog({ ...assignDialog, userId: e.target.value })}
+                    renderValue={(selected) => {
+                      if (!selected) return '';
+                      // Chercher dans la liste des commerciaux chargés
+                      const selectedCommercial = commerciaux.find((c) => c.id === selected);
+                      if (selectedCommercial?.name) {
+                        return selectedCommercial.name;
+                      }
+                      // Si le commercial n'est pas dans la liste, utiliser getCommercialName
+                      // en créant un objet temporaire avec l'ID
+                      const tempAssignedTo = { id: selected };
+                      const name = getCommercialName(tempAssignedTo);
+                      if (name && name !== 'Non assigné' && name !== 'Commercial inconnu') {
+                        return name;
+                      }
+                      // Si toujours pas trouvé, chercher dans client.assignedTo
+                      if (client?.assignedTo) {
+                        const assignedToId = typeof client.assignedTo === 'object' && client.assignedTo !== null
+                          ? client.assignedTo.id || client.assignedTo.userId
+                          : client.assignedTo;
+                        if (assignedToId === selected) {
+                          const nameFromClient = getCommercialName(client.assignedTo);
+                          if (nameFromClient && nameFromClient !== 'Non assigné' && nameFromClient !== 'Commercial inconnu') {
+                            return nameFromClient;
                           }
-                          // Si le commercial n'est pas dans la liste, utiliser getCommercialName
-                          // en créant un objet temporaire avec l'ID
-                          const tempAssignedTo = { id: selected };
-                          const name = getCommercialName(tempAssignedTo);
-                          if (name && name !== 'Non assigné' && name !== 'Commercial inconnu') {
-                            return name;
-                          }
-                          // Si toujours pas trouvé, chercher dans client.assignedTo
-                          if (client?.assignedTo) {
-                            const assignedToId = typeof client.assignedTo === 'object' && client.assignedTo !== null
-                              ? client.assignedTo.id || client.assignedTo.userId
-                              : client.assignedTo;
-                            if (assignedToId === selected) {
-                              const nameFromClient = getCommercialName(client.assignedTo);
-                              if (nameFromClient && nameFromClient !== 'Non assigné' && nameFromClient !== 'Commercial inconnu') {
-                                return nameFromClient;
-                              }
-                            }
-                          }
-                          return 'Sélectionner un commercial';
-                        }}
-                      >
+                        }
+                      }
+                      return 'Sélectionner un commercial';
+                    }}
+                  >
                         {availableCommerciaux.map((commercial) => (
-                          <MenuItem key={commercial.id} value={commercial.id}>
-                            <Stack>
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {commercial.name}
-                              </Typography>
-                              {commercial.email && commercial.email !== commercial.name && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {commercial.email}
-                                </Typography>
-                              )}
-                            </Stack>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                      <MenuItem key={commercial.id} value={commercial.id}>
+                        <Stack>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {commercial.name}
+                          </Typography>
+                          {commercial.email && commercial.email !== commercial.name && (
+                            <Typography variant="caption" color="text.secondary">
+                              {commercial.email}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                   );
                 }
 

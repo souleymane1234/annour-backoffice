@@ -156,44 +156,17 @@ export default function FactureDetailsView() {
 
   const handleDownloadPdf = async () => {
     try {
-      const result = await ConsumApi.downloadFacturePdf(factureId);
+      // Ouvrir le PDF dans un nouvel onglet (l'utilisateur pourra le télécharger s'il le souhaite)
+      const result = await ConsumApi.openFacturePdfInNewTab(factureId);
       if (!result.success) {
-        showError('Erreur', result.message || 'Impossible d’afficher le PDF');
-        return;
-      }
-
-      // Ouvrir le PDF dans un nouvel onglet au lieu de télécharger
-      if (result.data instanceof Blob) {
-        const url = window.URL.createObjectURL(result.data);
-        window.open(url, '_blank');
-        // Nettoyer l'URL après un délai
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 1000);
-      } else {
-        showError('Erreur', 'PDF non disponible');
+        showError('Erreur', result.message || 'Impossible d\'afficher le PDF');
       }
     } catch (error) {
-      console.error('Error downloading PDF:', error);
-      showError('Erreur', 'Impossible d’afficher le PDF');
+      console.error('Error opening PDF:', error);
+      showError('Erreur', 'Impossible d\'afficher le PDF');
     }
   };
 
-  const handleGeneratePdf = async () => {
-    try {
-      const result = await ConsumApi.generateFacturePdf(factureId);
-      
-      if (result.success) {
-        showSuccess('Succès', 'PDF généré avec succès');
-        await loadFactureData();
-      } else {
-        showError('Erreur', result.message || 'Impossible de générer le PDF');
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      showError('Erreur', 'Impossible de générer le PDF');
-    }
-  };
 
   const statusText = {
     pending: 'En attente',

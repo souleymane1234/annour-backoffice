@@ -30,6 +30,8 @@ import {
 
 import { useNotification } from 'src/hooks/useNotification';
 
+import { useAdminStore } from 'src/store/useAdminStore';
+
 import { fDate } from 'src/utils/format-time';
 import { fNumber } from 'src/utils/format-number';
 
@@ -77,6 +79,7 @@ const STATUS_OPTIONS = [
 
 export default function BonsDeSortieView() {
   const { contextHolder, showApiResponse, showError, showSuccess } = useNotification();
+  const { admin } = useAdminStore();
 
   const [bonsDeSortie, setBonsDeSortie] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -253,6 +256,11 @@ export default function BonsDeSortieView() {
   };
 
   const handleUpdateStatus = async () => {
+    if (!isAdmin()) {
+      showError('Erreur', 'Vous n\'avez pas les permissions nécessaires pour valider un bon de sortie');
+      return;
+    }
+
     if (!statusDialog.bonId || !statusDialog.status) {
       showError('Erreur', 'Veuillez sélectionner un statut');
       return;
@@ -280,6 +288,11 @@ export default function BonsDeSortieView() {
   };
 
   const handleDelete = async (id, status) => {
+    if (!isAdmin()) {
+      showError('Erreur', 'Vous n\'avez pas les permissions nécessaires pour supprimer un bon de sortie');
+      return;
+    }
+
     if (status === 'completed') {
       showError('Erreur', 'Impossible de supprimer un bon de sortie complété');
       return;
@@ -307,6 +320,19 @@ export default function BonsDeSortieView() {
   };
 
   const getTotalAmount = () => bonsDeSortie.reduce((sum, b) => sum + (b.montant || 0), 0);
+
+  // Vérifier si l'utilisateur est un administrateur
+  const isAdmin = () => {
+    if (!admin) return false;
+    const role = (admin.role || '').trim().toUpperCase();
+    const service = (admin.service || '').trim().toLowerCase();
+    return (
+      role === 'ADMIN' ||
+      role === 'SUPERADMIN' ||
+      service.includes('admin') ||
+      role.startsWith('ADMIN')
+    );
+  };
 
   const getCategoryLabel = (categorie) => {
     const category = CATEGORIES.find((c) => c.value === categorie);
@@ -343,21 +369,23 @@ export default function BonsDeSortieView() {
           </Button>
         </Stack>
 
-        {/* Statistiques */}
-        <Stack direction="row" spacing={2} mb={3}>
-          <Card sx={{ p: 2, minWidth: 150 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Total Dépenses
-            </Typography>
-            <Typography variant="h4">{fNumber(getTotalAmount())} FCFA</Typography>
-          </Card>
-          <Card sx={{ p: 2, minWidth: 150 }}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Total Bons
-            </Typography>
-            <Typography variant="h4">{bonsDeSortie.length}</Typography>
-          </Card>
-        </Stack>
+        {/* Statistiques - Affichées uniquement pour les administrateurs */}
+        {isAdmin() && (
+          <Stack direction="row" spacing={2} mb={3}>
+            <Card sx={{ p: 2, minWidth: 150 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Total Dépenses
+              </Typography>
+              <Typography variant="h4">{fNumber(getTotalAmount())} FCFA</Typography>
+            </Card>
+            <Card sx={{ p: 2, minWidth: 150 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Total Bons
+              </Typography>
+              <Typography variant="h4">{bonsDeSortie.length}</Typography>
+            </Card>
+          </Stack>
+        )}
 
         {/* Filtres */}
         <Card sx={{ mb: 3 }}>
@@ -470,20 +498,22 @@ export default function BonsDeSortieView() {
                           </TableCell>
                           <TableCell align="right">
                             <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              {bon.status !== 'approved' && (
+                              {isAdmin() && bon.status !== 'approved' && (
                                 <IconButton
                                   size="small"
                                   onClick={() => openStatusDialog(bon.id, bon.status)}
                                   color="info"
+                                  title="Valider le bon de sortie"
                                 >
                                   <Iconify icon="solar:pen-bold" />
                                 </IconButton>
                               )}
-                              {bon.status !== 'completed' && (
+                              {isAdmin() && bon.status !== 'completed' && (
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDelete(bon.id, bon.status)}
                                   color="error"
+                                  title="Supprimer le bon de sortie"
                                 >
                                   <Iconify icon="solar:trash-bin-trash-bold" />
                                 </IconButton>
