@@ -52,6 +52,7 @@ const CATEGORIES = [
   { value: 'marketing', label: 'Marketing' },
   { value: 'location', label: 'Location' },
   { value: 'maintenance', label: 'Maintenance' },
+  { value: 'remboursement', label: 'Remboursement' },
   { value: 'autre', label: 'Autre' },
 ];
 

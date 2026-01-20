@@ -13,6 +13,7 @@ import {
   Select,
   MenuItem,
   TableRow,
+  TextField,
   TableBody,
   TableCell,
   TableHead,
@@ -79,6 +80,7 @@ export default function FacturesByCategoryView() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [clientFilter, setClientFilter] = useState('');
   const [clients, setClients] = useState([]);
+  const [searchText, setSearchText] = useState(''); // Recherche par nom ou email
   const [convertingId, setConvertingId] = useState(null);
   const [convertDialog, setConvertDialog] = useState({
     open: false,
@@ -163,6 +165,16 @@ export default function FacturesByCategoryView() {
     // Filtrer par client si sélectionné
     if (clientFilter) {
       filtered = filtered.filter((f) => f.clientId === clientFilter || f.client?.id === clientFilter);
+    }
+
+    // Filtrer par texte de recherche (nom ou email)
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase().trim();
+      filtered = filtered.filter((facture) => {
+        const clientName = (facture.clientName || facture.client?.nom || '').toLowerCase();
+        const clientEmail = (facture.client?.email || '').toLowerCase();
+        return clientName.includes(searchLower) || clientEmail.includes(searchLower);
+      });
     }
 
     return filtered;
@@ -254,7 +266,22 @@ export default function FacturesByCategoryView() {
 
         {/* Filtres */}
         <Card sx={{ mb: 3 }}>
-          <Stack direction="row" spacing={2} p={2}>
+          <Stack direction="row" spacing={2} p={2} flexWrap="wrap">
+            <TextField
+              sx={{ minWidth: 250 }}
+              label="Rechercher par nom ou email"
+              placeholder="Nom ou email du client..."
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPage(0);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <Iconify icon="solar:magnifer-bold" sx={{ mr: 1, color: 'text.disabled' }} />
+                ),
+              }}
+            />
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Client</InputLabel>
               <Select
@@ -307,7 +334,7 @@ export default function FacturesByCategoryView() {
                     <TableRow>
                       <TableCell colSpan={7} align="center">
                         <Typography variant="body2" color="text.secondary">
-                          Aucune facture trouvée
+                          {searchText.trim() ? 'Aucune facture trouvée pour cette recherche' : 'Aucune facture trouvée'}
                         </Typography>
                       </TableCell>
                     </TableRow>

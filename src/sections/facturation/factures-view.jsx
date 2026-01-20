@@ -78,6 +78,7 @@ export default function FacturesView() {
   const [statusFilter, setStatusFilter] = useState('');
   const [clientFilter, setClientFilter] = useState(clientIdFromUrl || '');
   const [typeFilter, setTypeFilter] = useState('facture'); // 'facture' ou 'proforma'
+  const [searchText, setSearchText] = useState(''); // Recherche par nom ou email
 
   // Dialogs
   const [createDialog, setCreateDialog] = useState({
@@ -409,7 +410,22 @@ export default function FacturesView() {
 
         {/* Filtres */}
         <Card sx={{ mb: 3 }}>
-          <Stack direction="row" spacing={2} p={2}>
+          <Stack direction="row" spacing={2} p={2} flexWrap="wrap">
+            <TextField
+              sx={{ minWidth: 250 }}
+              label="Rechercher par nom ou email"
+              placeholder="Nom ou email du client..."
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPage(0);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <Iconify icon="solar:magnifer-bold" sx={{ mr: 1, color: 'text.disabled' }} />
+                ),
+              }}
+            />
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Type</InputLabel>
               <Select
@@ -490,16 +506,31 @@ export default function FacturesView() {
                       </TableCell>
                     </TableRow>
                   )}
-                  {!loading && factures.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={9} align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          Aucune facture trouvée
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!loading && factures.length > 0 && factures
+                  {!loading && (() => {
+                    // Filtrer les factures par texte de recherche (nom ou email)
+                    let filteredFactures = factures;
+                    if (searchText.trim()) {
+                      const searchLower = searchText.toLowerCase().trim();
+                      filteredFactures = factures.filter((facture) => {
+                        const clientName = (facture.clientName || facture.client?.nom || '').toLowerCase();
+                        const clientEmail = (facture.client?.email || '').toLowerCase();
+                        return clientName.includes(searchLower) || clientEmail.includes(searchLower);
+                      });
+                    }
+                    
+                    if (filteredFactures.length === 0) {
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={9} align="center">
+                            <Typography variant="body2" color="text.secondary">
+                              {searchText.trim() ? 'Aucune facture trouvée pour cette recherche' : 'Aucune facture trouvée'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    
+                    return filteredFactures
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       .map((facture) => (
                         <TableRow key={facture.id} hover>
@@ -559,7 +590,8 @@ export default function FacturesView() {
                             </Stack>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ));
+                  })()}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -568,7 +600,18 @@ export default function FacturesView() {
           <TablePagination
             page={page}
             component="div"
-            count={factures.length}
+            count={(() => {
+              // Filtrer les factures par texte de recherche pour le count
+              if (searchText.trim()) {
+                const searchLower = searchText.toLowerCase().trim();
+                return factures.filter((facture) => {
+                  const clientName = (facture.clientName || facture.client?.nom || '').toLowerCase();
+                  const clientEmail = (facture.client?.email || '').toLowerCase();
+                  return clientName.includes(searchLower) || clientEmail.includes(searchLower);
+                }).length;
+              }
+              return factures.length;
+            })()}
             rowsPerPage={rowsPerPage}
             onPageChange={handleChangePage}
             rowsPerPageOptions={[5, 10, 25]}
@@ -583,8 +626,19 @@ export default function FacturesView() {
             <Stack spacing={3} sx={{ mt: 1 }}>
               <Autocomplete
                 fullWidth
+                openOnFocus
+                clearOnBlur
                 options={clients}
-                getOptionLabel={(option) => `${option.nom || ''} - ${option.numero || ''}`.trim() || option.id}
+                getOptionLabel={(option) => {
+                  const nom = option.nom || '';
+                  const numero = option.numero || '';
+                  const email = option.email || '';
+                  const parts = [];
+                  if (nom) parts.push(nom);
+                  if (numero) parts.push(numero);
+                  if (email) parts.push(`(${email})`);
+                  return parts.length > 0 ? parts.join(' - ') : option.id;
+                }}
                 value={clients.find((c) => c.id === createDialog.formData.clientId) || null}
                 onChange={(event, newValue) => {
                   setCreateDialog({
@@ -599,15 +653,20 @@ export default function FacturesView() {
                   <TextField
                     {...params}
                     label="Client *"
-                    placeholder="Rechercher par nom ou numéro..."
+                    placeholder="Rechercher par nom, email ou numéro..."
+                    inputProps={{
+                      ...params.inputProps,
+                      autoComplete: 'off',
+                    }}
                   />
                 )}
                 filterOptions={(options, params) => {
                   const filtered = options.filter((option) => {
-                    const searchText = params.inputValue.toLowerCase();
+                    const queryText = params.inputValue.toLowerCase();
                     const nom = (option.nom || '').toLowerCase();
                     const numero = (option.numero || '').toLowerCase();
-                    return nom.includes(searchText) || numero.includes(searchText);
+                    const email = (option.email || '').toLowerCase();
+                    return nom.includes(queryText) || numero.includes(queryText) || email.includes(queryText);
                   });
                   return filtered;
                 }}
