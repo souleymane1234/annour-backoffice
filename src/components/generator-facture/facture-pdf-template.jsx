@@ -499,13 +499,13 @@ const FacturePdfDocument = ({ facture }) => {
             Riviera palmeraie Lot 09, Ilot 03 Abidjan-Côte d&apos;Ivoire
           </Text>
           <Text style={styles.footerText}>
-            +225 05 00 49 58 58 / 07 89 24 47 60 . contact@annour-travel.com
+            +225 05 00 49 58 58 / 05 64 07 56 66 / 05 85 74 02 24. contact@annour-travel.com
           </Text>
           <Text style={styles.footerText}>
             RCCM : CI-ABJ-03-2023-B13-11981 / NCC : 2304977 U . https://annour-travel.com/
           </Text>
           <Text style={styles.footerTextBold}>
-            Orange Money / Wave : 0789244760
+            Wave : 0564075666
           </Text>
           <Text style={styles.footerTextBold}>
             RIB CORIS BANK : 01023   010346524101    14
