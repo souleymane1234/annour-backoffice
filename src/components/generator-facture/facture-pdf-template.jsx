@@ -288,6 +288,16 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     objectFit: 'contain',
   },
+  // Cachet + signature après les paiements (reçus)
+  signatureCachetContainer: {
+    marginTop: 15,
+    alignItems: 'flex-end',
+  },
+  signatureCachetImage: {
+    width: 170,
+    height: 'auto',
+    objectFit: 'contain',
+  },
 });
 
 // Composant PDF de la facture
@@ -311,6 +321,11 @@ const FacturePdfDocument = ({ facture }) => {
     (typeof window !== 'undefined' 
       ? `${window.location.origin}/assets/images/cachet.png`
       : '/assets/images/cachet.png');
+
+  const signatureCachetSrc = facture._signatureCachetImage ||
+    (typeof window !== 'undefined'
+      ? `${window.location.origin}/document/cachet-signature.png`
+      : '/document/cachet-signature.png');
   
   // Calculer les totaux
   const totalHT = items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
@@ -467,6 +482,17 @@ const FacturePdfDocument = ({ facture }) => {
                   })()}
                 </Text>
               </View>
+            </View>
+          )}
+
+          {/* Cachet et signature (uniquement pour les reçus) */}
+          {!isProforma && signatureCachetSrc && (
+            <View style={styles.signatureCachetContainer} wrap={false}>
+              <Image
+                src={signatureCachetSrc}
+                style={styles.signatureCachetImage}
+                cache={false}
+              />
             </View>
           )}
 

@@ -769,14 +769,16 @@ export default class ConsumApi {
 
       // Charger les images en base64 pour le PDF
       const {origin} = window.location;
-      const [headerImageBase64, logoBase64] = await Promise.all([
+      const [headerImageBase64, logoBase64, signatureCachetBase64] = await Promise.all([
         this.loadImageAsBase64(`${origin}/document/TETE.jpg`),
         this.loadImageAsBase64(`${origin}/document/logo.jpg`),
+        this.loadImageAsBase64(`${origin}/document/cachet-signature.png`),
       ]);
 
       // Ajouter les images en base64 à la facture pour le PDF
       facture._headerImage = headerImageBase64;
       facture._watermarkLogo = logoBase64;
+      facture._signatureCachetImage = signatureCachetBase64;
 
       // Générer le PDF avec React-PDF
       const blob = await pdf(React.createElement(FacturePdfDocument, { facture })).toBlob();
@@ -831,14 +833,16 @@ export default class ConsumApi {
 
       // Charger les images en base64 pour le PDF
       const {origin} = window.location;
-      const [headerImageBase64, logoBase64] = await Promise.all([
+      const [headerImageBase64, logoBase64, signatureCachetBase64] = await Promise.all([
         this.loadImageAsBase64(`${origin}/document/TETE.jpg`),
         this.loadImageAsBase64(`${origin}/document/logo.jpg`),
+        this.loadImageAsBase64(`${origin}/document/cachet-signature.png`),
       ]);
 
       // Ajouter les images en base64 à la facture pour le PDF
       facture._headerImage = headerImageBase64;
       facture._watermarkLogo = logoBase64;
+      facture._signatureCachetImage = signatureCachetBase64;
 
       // Générer le PDF avec React-PDF
       const blob = await pdf(React.createElement(FacturePdfDocument, { facture })).toBlob();

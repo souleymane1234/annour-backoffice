@@ -71,6 +71,13 @@ const SERVICE_OPTIONS = [
   { value: 'AssuranceVoyage', label: 'Assurance voyage' },
   { value: 'CargoEnvoiColis', label: 'Cargo et envoi de colis' },
   { value: 'TransfertArgent', label: 'Transfert d\'argent' },
+  { value: 'VivreIrlande', label: 'Vivre en Irlande' },
+  { value: 'TravaillerSerbie', label: 'Travaillez en Serbie' },
+  { value: 'VivrePaysBas', label: 'Vivre aux Pays-Bas' },
+  { value: 'VivreRoumanie', label: 'Vivre en Roumanie' },
+  { value: 'TravaillerPortugal', label: 'Travaillez au Portugal' },
+  { value: 'TravaillerPologne', label: 'Travaillez en Pologne' },
+  { value: 'VivreBelgique', label: 'Vivre en Belgique' },
 ];
 
 const STATUS_COLORS = {
